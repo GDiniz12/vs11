@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { GameProvider } from "@/context/GameContext";
 import { LanguageProvider } from "@/context/LanguageContext";
-import LanguageSelector from "@/components/LanguageSelector";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,7 +21,6 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} bg-plum-dark min-h-screen`}>
         <LanguageProvider>
-          <LanguageSelector />
           <GameProvider>{children}</GameProvider>
         </LanguageProvider>
       </body>

@@ -12,7 +12,8 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Language>("en");
+  // Configurado o Português ("pt") como idioma padrão inicial
+  const [lang, setLang] = useState<Language>("pt");
 
   useEffect(() => {
     try {

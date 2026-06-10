@@ -27,7 +27,7 @@ export default function PlayerMarker({
       style={{
         left: `${slot.x}%`,
         top: `${slot.y}%`,
-        x: "-50%", // Centralização nativa do Framer Motion (corrige o bug do deslocamento)
+        x: "-50%",
         y: "-50%",
         zIndex: 10,
       }}
@@ -40,10 +40,10 @@ export default function PlayerMarker({
         whileHover={onClick && !hasPlayer ? { scale: 1.1 } : hasPlayer ? { scale: 1.05 } : {}}
         className={`
           relative flex flex-col justify-between
-          w-[54px] h-[68px] md:w-[72px] md:h-[85px] 
+          w-[46px] h-[60px] sm:w-[54px] sm:h-[68px] md:w-[72px] md:h-[85px] 
           border-2 border-[#00183F] text-center
-          transition-all duration-200 rounded-none
-          shadow-[3px_3px_0_0_rgba(0,0,0,0.5)] md:shadow-[4px_4px_0_0_rgba(0,0,0,0.5)]
+          transition-all duration-200 rounded-none overflow-hidden
+          shadow-[2px_2px_0_0_rgba(0,0,0,0.5)] md:shadow-[4px_4px_0_0_rgba(0,0,0,0.5)]
           ${
             hasPlayer
               ? "bg-white text-[#00183F]"
@@ -54,18 +54,18 @@ export default function PlayerMarker({
         `}
       >
         {/* Posição no topo do card */}
-        <div className={`text-[8px] md:text-[9px] font-black py-0.5 border-b border-[#00183F] ${hasPlayer ? "bg-[#00183F] text-white" : "bg-black/40 text-white"}`}>
+        <div className={`text-[7px] sm:text-[8px] md:text-[9px] font-black py-0.5 border-b border-[#00183F] w-full ${hasPlayer ? "bg-[#00183F] text-white" : "bg-black/40 text-white"}`}>
           {POSITION_LABELS_MAP[lang][slot.position]}
         </div>
 
         {/* Informações centrais com escala responsiva de texto */}
-        <div className="flex-1 flex flex-col items-center justify-center p-0.5 overflow-hidden">
+        <div className="flex-1 flex flex-col items-center justify-center p-0.5 w-full">
           {hasPlayer ? (
             <>
-              <span className={`text-sm md:text-xl font-black leading-none ${slot.player!.overall >= 95 ? "text-amber-600" : "text-[#00183F]"}`}>
+              <span className={`text-sm sm:text-base md:text-xl font-black leading-none ${slot.player!.overall >= 95 ? "text-amber-600" : "text-[#00183F]"}`}>
                 {slot.player!.overall}
               </span>
-              <span className="text-[7px] md:text-[9px] font-bold mt-0.5 md:mt-1 truncate w-full px-0.5">
+              <span className="text-[6px] sm:text-[7px] md:text-[9px] font-bold mt-0.5 md:mt-1 truncate w-full px-0.5">
                 {slot.player!.name.split(" ").slice(-1)[0]}
               </span>
             </>
