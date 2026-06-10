@@ -27,25 +27,28 @@ export default function TeamCard({
       exit={{ opacity: 0, x: 30 }}
       transition={{ duration: 0.4 }}
     >
-      <Card className="overflow-hidden">
-        {/* Team header */}
-        <div className="mb-4 pb-3 border-b border-gray-100">
-          <h3 className="text-xl md:text-2xl font-bold text-gray-800 uppercase tracking-wide">
+      <Card className="overflow-hidden p-4 md:p-6 bg-white border-4 border-[#00183F] shadow-[8px_8px_0_0_#0033A0]">
+        
+        {/* Cabeçalho do Time Brutalista */}
+        <div className="mb-6 pb-4 border-b-4 border-[#00183F] flex flex-col items-start gap-3">
+          <h3 className="text-2xl md:text-3xl font-black text-[#00183F] uppercase tracking-tight leading-none">
             {team.name}
           </h3>
-          <span className="text-xs text-plum font-medium">
+          
+          <span className="inline-block bg-[#D9D9D9] text-[#00183F] border-2 border-[#00183F] px-3 py-1 text-[10px] md:text-xs font-black uppercase tracking-widest shadow-[2px_2px_0_0_#00183F]">
             {team.continent === "american" ? "🌎 Americas" : "🌍 Europe"}
           </span>
         </div>
 
-        {/* Players list */}
-        <div className="space-y-1">
+        {/* Lista de Jogadores */}
+        <div className="space-y-2">
           {team.players.map((player, idx) => {
             const disabled = !canPlayerFillAnyRemaining(
               player.positions,
               slots
             );
             const isSelected = selectedPlayer?.name === player.name && selectedPlayer?.teamKey === player.teamKey;
+            
             return (
               <PlayerRow
                 key={`${player.name}-${idx}`}

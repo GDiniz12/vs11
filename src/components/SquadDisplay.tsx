@@ -3,73 +3,42 @@
 import React from "react";
 import { FormationSlot } from "@/types";
 import { useLanguage } from "@/context/LanguageContext";
-import { POSITION_LABELS_MAP, TRANSLATIONS } from "@/lib/constants";
+import { POSITION_LABELS_MAP } from "@/lib/constants";
 
 interface SquadDisplayProps {
   slots: FormationSlot[];
 }
 
 export default function SquadDisplay({ slots }: SquadDisplayProps) {
-  const filled = slots.filter((s) => s.player).length;
-  const total = slots.length;
-
   const { lang } = useLanguage();
-
+  
   return (
-    <div className="space-y-3">
-      {/* Progress */}
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-semibold text-gray-600">
-          {TRANSLATIONS[lang].squad_progress}
-        </span>
-        <span className="text-sm font-bold text-plum">
-          {filled}/{total}
-        </span>
-      </div>
-
-      {/* Progress bar */}
-      <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-        <div
-          className="h-full bg-plum rounded-full transition-all duration-500 ease-out"
-          style={{ width: `${(filled / total) * 100}%` }}
-        />
-      </div>
-
-      {/* Slot list */}
-      <div className="space-y-1.5 mt-3">
+    <div className="bg-white text-[#00183F] border-4 border-[#00183F] p-4 shadow-[8px_8px_0_0_rgba(0,0,0,0.5)] h-full">
+      <h3 className="text-xl font-black uppercase tracking-widest border-b-4 border-[#00183F] pb-2 mb-4">
+        {lang === "pt" ? "Seu Elenco" : "Your Squad"}
+      </h3>
+      
+      <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px] md:max-h-full pr-2">
         {slots.map((slot) => (
-          <div
-            key={slot.id}
-            className={`
-              flex items-center gap-2 px-3 py-2 rounded-lg text-sm
-              ${
-                slot.player
-                  ? "bg-plum/5 border border-plum/10"
-                  : "bg-gray-50 border border-dashed border-gray-200"
-              }
-            `}
+          <div 
+            key={slot.id} 
+            className="flex items-center border-2 border-[#00183F] bg-[#D9D9D9]/30 p-2"
           >
-            <span
-              className={`
-                font-bold text-xs min-w-[32px]
-                ${slot.player ? "text-plum" : "text-gray-400"}
-              `}
-            >
+            {/* Tag da Posição */}
+            <div className="bg-[#00183F] text-white w-10 text-center py-1 text-xs font-black">
               {POSITION_LABELS_MAP[lang][slot.position]}
-            </span>
-            {slot.player ? (
-              <>
-                <span className="flex-1 font-medium text-gray-800 truncate">
-                  {slot.player.name}
-                </span>
-                <span className="font-bold text-plum-dark text-xs">
-                  {slot.player.overall}
-                </span>
-              </>
-            ) : (
-              <span className="flex-1 text-gray-400 italic text-xs">
-                {TRANSLATIONS[lang].empty}
-              </span>
+            </div>
+            
+            {/* Nome do Jogador */}
+            <div className="ml-3 flex-1 font-bold text-sm truncate uppercase text-[#00183F]">
+              {slot.player ? slot.player.name : <span className="text-gray-400">---</span>}
+            </div>
+            
+            {/* OVR Destacado */}
+            {slot.player && (
+              <div className="ml-2 font-black text-lg bg-white border-2 border-[#00183F] px-2 shadow-[2px_2px_0_0_#00183F]">
+                {slot.player.overall}
+              </div>
             )}
           </div>
         ))}
