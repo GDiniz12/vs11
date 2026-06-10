@@ -30,7 +30,7 @@ export default function DraftPage() {
   
   const [rerollsLeft, setRerollsLeft] = useState(3);
 
-  // CORREÇÃO: Os sorteios agora duram o draft inteiro. Só resetam se você iniciar um novo jogo (Rodada 0).
+  // Os sorteios duram o draft inteiro. Só resetam se iniciar um novo jogo (Rodada 0).
   useEffect(() => {
     if (draftRound === 0) {
       setRerollsLeft(3);
@@ -42,15 +42,6 @@ export default function DraftPage() {
       drawNextTeam();
     }
   }, [currentDraftTeam, draftRound, drawNextTeam]);
-
-  useEffect(() => {
-    if (draftRound >= 11) {
-      const timer = setTimeout(() => {
-        router.push("/tournament");
-      }, 800);
-      return () => clearTimeout(timer);
-    }
-  }, [draftRound, router]);
 
   const hasSelectablePlayers = currentDraftTeam?.players.some(
     (p) => getAvailablePositions(slots, p.positions).length > 0
@@ -107,39 +98,26 @@ export default function DraftPage() {
       chances: "Sorteios Restantes",
       freeDesc: "Nenhum Jogador Encaixa - Sorteio Livre",
       reroll: "Refazer Sorteio",
-      freeReroll: "Sorteio Grátis"
+      freeReroll: "Sorteio Grátis",
+      ready: "Elenco pronto para a Glória!",
+      simulateBtn: "Simular Agora"
     },
     en: {
       title: "Draft Options",
       chances: "Re-rolls Left",
       freeDesc: "No Players Fit - Free Re-roll",
       reroll: "Re-roll Draft",
-      freeReroll: "Free Re-roll"
+      freeReroll: "Free Re-roll",
+      ready: "Squad ready for Glory!",
+      simulateBtn: "Simulate Now"
     }
   }[lang];
 
-  if (draftRound >= 11) {
-    return (
-      <div className="min-h-screen bg-[#00183F] flex items-center justify-center p-6">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-center bg-white border-4 border-[#00183F] p-8 shadow-[12px_12px_0_0_#0033A0]"
-        >
-          <span className="text-6xl mb-6 block drop-shadow-[4px_4px_0_#D9D9D9]">✅</span>
-          <h2 className="text-3xl font-black text-[#00183F] mb-2 uppercase tracking-tighter">
-            {TRANSLATIONS[lang].squad_complete}
-          </h2>
-          <p className="text-[#0033A0] font-bold uppercase tracking-widest bg-[#D9D9D9] border-2 border-[#0033A0] inline-block px-4 py-1 mt-2">
-            {TRANSLATIONS[lang].starting_tournament}
-          </p>
-        </motion.div>
-      </div>
-    );
-  }
+  const isDraftComplete = draftRound >= 11;
 
   return (
     <div className="min-h-screen bg-[#00183F] px-4 py-8 md:py-12 max-w-7xl mx-auto font-sans text-white">
+      {/* CABEÇALHO */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -154,17 +132,18 @@ export default function DraftPage() {
               {TRANSLATIONS[lang].round_label}
             </span>
             <span className="text-xl md:text-2xl font-black text-[#0033A0]">
-              {draftRound + 1}
+              {Math.min(draftRound + 1, 11)}
             </span>
             <span className="text-sm md:text-lg font-black text-[#00183F]">/ 11</span>
           </div>
         </div>
 
+        {/* BARRA DE PROGRESSO */}
         <div className="w-full h-6 bg-white border-4 border-[#00183F] relative overflow-hidden">
           <motion.div
             className="h-full bg-[#0033A0] border-r-4 border-[#00183F]"
             initial={{ width: 0 }}
-            animate={{ width: `${(draftRound / 11) * 100}%` }}
+            animate={{ width: `${(Math.min(draftRound, 11) / 11) * 100}%` }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           />
         </div>
@@ -172,48 +151,78 @@ export default function DraftPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         
+        {/* LADO ESQUERDO: Controles ou Botão de Simular */}
         <div className="flex flex-col gap-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white border-4 border-[#00183F] p-4 shadow-[6px_6px_0_0_#0033A0]">
-            <div className="mb-4 sm:mb-0">
-              <h3 className="text-base md:text-lg font-black text-[#00183F] uppercase leading-none">
-                {tDraft.title}
-              </h3>
-              <p className={`text-xs md:text-sm font-bold uppercase mt-1 ${!hasSelectablePlayers ? "text-emerald-600" : "text-gray-500"}`}>
-                {!hasSelectablePlayers ? tDraft.freeDesc : `${tDraft.chances}: ${rerollsLeft}/3`}
-              </p>
-            </div>
-
-            <button
-              onClick={handleReroll}
-              disabled={rerollsLeft === 0 && hasSelectablePlayers}
-              className={`
-                px-4 md:px-6 py-2 md:py-3 font-black uppercase text-sm md:text-base tracking-widest border-4 border-[#00183F] transition-all duration-75 w-full sm:w-auto
-                ${
-                  !hasSelectablePlayers
-                    ? "bg-emerald-400 text-[#00183F] shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#00183F]"
-                    : rerollsLeft > 0
-                    ? "bg-amber-400 text-[#00183F] shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#00183F]"
-                    : "bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed shadow-none"
-                }
-              `}
+          {isDraftComplete ? (
+            // ESTADO DE CONCLUSÃO MANTENDO O RESTANTE DA TELA VISÍVEL
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 100 }}
+              className="text-center bg-white border-4 border-[#00183F] p-8 md:p-12 shadow-[10px_10px_0_0_#0033A0] flex flex-col items-center justify-center h-full min-h-[300px]"
             >
-              {!hasSelectablePlayers ? tDraft.freeReroll : `${tDraft.reroll} (${rerollsLeft})`}
-            </button>
-          </div>
+              <span className="text-6xl mb-4 block drop-shadow-[4px_4px_0_#D9D9D9]">✅</span>
+              <h2 className="text-3xl md:text-4xl font-black text-[#00183F] mb-2 uppercase tracking-tighter">
+                {TRANSLATIONS[lang].squad_complete}
+              </h2>
+              <p className="text-gray-500 font-bold uppercase tracking-widest mb-10 text-sm md:text-base">
+                {tDraft.ready}
+              </p>
 
-          <AnimatePresence mode="wait">
-            {currentDraftTeam && (
-              <TeamCard
-                key={currentDraftTeam.key + "-" + draftRound}
-                team={currentDraftTeam}
-                slots={slots}
-                onPlayerSelect={handlePlayerSelect}
-                selectedPlayer={selectedPlayer}
-              />
-            )}
-          </AnimatePresence>
+              <button
+                onClick={() => router.push("/tournament")}
+                className="w-full px-8 py-5 bg-[#D9D9D9] text-[#00183F] border-4 border-[#00183F] font-black text-2xl uppercase tracking-widest transition-all duration-75 shadow-[6px_6px_0_0_#0033A0] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[10px_10px_0_0_#0033A0] active:translate-y-2 active:translate-x-2 active:shadow-none"
+              >
+                {tDraft.simulateBtn}
+              </button>
+            </motion.div>
+          ) : (
+            // ESTADO DE DRAFT (Escolhendo Jogadores)
+            <>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white border-4 border-[#00183F] p-4 shadow-[6px_6px_0_0_#0033A0]">
+                <div className="mb-4 sm:mb-0">
+                  <h3 className="text-base md:text-lg font-black text-[#00183F] uppercase leading-none">
+                    {tDraft.title}
+                  </h3>
+                  <p className={`text-xs md:text-sm font-bold uppercase mt-1 ${!hasSelectablePlayers ? "text-emerald-600" : "text-gray-500"}`}>
+                    {!hasSelectablePlayers ? tDraft.freeDesc : `${tDraft.chances}: ${rerollsLeft}/3`}
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleReroll}
+                  disabled={rerollsLeft === 0 && hasSelectablePlayers}
+                  className={`
+                    px-4 md:px-6 py-2 md:py-3 font-black uppercase text-sm md:text-base tracking-widest border-4 border-[#00183F] transition-all duration-75 w-full sm:w-auto
+                    ${
+                      !hasSelectablePlayers
+                        ? "bg-emerald-400 text-[#00183F] shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#00183F]"
+                        : rerollsLeft > 0
+                        ? "bg-amber-400 text-[#00183F] shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#00183F]"
+                        : "bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed shadow-none"
+                    }
+                  `}
+                >
+                  {!hasSelectablePlayers ? tDraft.freeReroll : `${tDraft.reroll} (${rerollsLeft})`}
+                </button>
+              </div>
+
+              <AnimatePresence mode="wait">
+                {currentDraftTeam && (
+                  <TeamCard
+                    key={currentDraftTeam.key + "-" + draftRound}
+                    team={currentDraftTeam}
+                    slots={slots}
+                    onPlayerSelect={handlePlayerSelect}
+                    selectedPlayer={selectedPlayer}
+                  />
+                )}
+              </AnimatePresence>
+            </>
+          )}
         </div>
 
+        {/* LADO DIREITO: Campo e Escalação sempre visíveis */}
         <div className="space-y-6">
           <Card className="p-4 md:p-6 bg-[#1E293B]">
             <FootballPitch
@@ -222,13 +231,13 @@ export default function DraftPage() {
             />
           </Card>
 
-          {/* Wrapper ajustado para evitar que o componente bugue as cores */}
           <div className="p-0 overflow-hidden bg-white text-[#00183F]">
             <SquadDisplay slots={slots} />
           </div>
         </div>
       </div>
 
+      {/* MODAL DE POSIÇÃO */}
       {showPositionPicker && selectedPlayer && (
         <PositionPicker
           player={selectedPlayer}

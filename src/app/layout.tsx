@@ -7,7 +7,7 @@ import { LanguageProvider } from "@/context/LanguageContext";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "16-0 | Football Simulation",
+  title: "16a0",
   description:
     "Build your dream squad and conquer Europe in this premium football simulation game.",
 };

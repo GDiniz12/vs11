@@ -1,105 +1,142 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useGame } from "@/context/GameContext";
 import KnockoutMatch from "@/components/KnockoutMatch";
 import Button from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
-import { TRANSLATIONS } from "@/lib/constants";
 
 export default function KnockoutPage() {
   const router = useRouter();
   const { lang } = useLanguage();
-  const {
-    knockoutRounds,
-    isChampion,
-    userTeamName,
-    setPhase,
-  } = useGame();
+  const { knockoutRounds, isChampion, userTeamName, setPhase } = useGame();
 
-  const handleViewResults = () => {
-    setPhase("result");
-    router.push("/result");
-  };
+  const [tick, setTick] = useState(0);
+  const endRef = useRef<HTMLDivElement>(null);
 
-  if (knockoutRounds.length === 0) {
+  const roundsWithTiming = useMemo(() => {
+    if (!knockoutRounds) return [];
+    let currentStart = 0;
+    return knockoutRounds.map((round) => {
+      const startTick = currentStart;
+      const hasLeg2 = !!round.leg2;
+      const duration = hasLeg2 ? 3 : 2; 
+      currentStart += duration;
+      return { roundData: round, startTick, duration };
+    });
+  }, [knockoutRounds]);
+
+  const totalTicks = roundsWithTiming.reduce((acc, curr) => acc + curr.duration, 0);
+
+  useEffect(() => {
+    if (!knockoutRounds || knockoutRounds.length === 0) return;
+
+    const interval = setInterval(() => {
+      setTick((t) => {
+        if (t < totalTicks) {
+          setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
+          return t + 1;
+        }
+        clearInterval(interval);
+        return t;
+      });
+    }, 3000); 
+
+    return () => clearInterval(interval);
+  }, [knockoutRounds, totalTicks]);
+
+  const t = {
+    pt: {
+      title: "SUPER MUNDIAL DE CLUBES",
+      subtitle: "Fase Eliminatória",
+      loading: "Sorteando e Simulando Chaveamento...",
+      champion: "🏆 CAMPEÃO DO MUNDO!",
+      eliminated: "❌ ELIMINADO",
+      viewResults: "Ver Relatório Final",
+    },
+    en: {
+      title: "SUPER CLUB WORLD CUP",
+      subtitle: "Knockout Phase",
+      loading: "Drawing and Simulating Bracket...",
+      champion: "🏆 WORLD CHAMPION!",
+      eliminated: "❌ ELIMINATED",
+      viewResults: "View Final Report",
+    }
+  }[lang];
+
+  if (!knockoutRounds || knockoutRounds.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">No knockout data available.</p>
+      <div className="min-h-screen bg-[#00183F] flex items-center justify-center">
+        <div className="text-white font-black text-2xl uppercase tracking-widest animate-pulse">
+          {t.loading}
+        </div>
       </div>
     );
   }
 
+  const showRemainingContent = tick >= totalTicks;
+
+  const handleFinish = () => {
+    setPhase("result");
+    router.push("/result");
+  };
+
   return (
-    <div className="min-h-screen px-4 py-10 max-w-3xl mx-auto">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        {/* Header */}
-        <div className="text-center mb-10">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
-            {TRANSLATIONS[lang].knockout_stage}
-          </h1>
-          <p className="text-gray-500">
-            {TRANSLATIONS[lang].win_or_go_home}
-          </p>
-        </div>
+    <div className="min-h-screen bg-[#00183F] px-4 py-10 font-sans text-white">
+      <div className="max-w-5xl mx-auto">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
 
-        {/* Knockout rounds */}
-        <div className="space-y-6 mb-10">
-          {knockoutRounds.map((round, idx) => (
-            <KnockoutMatch
-              key={round.round}
-              round={round}
-              userTeamName={userTeamName}
-              index={idx}
-            />
-          ))}
-        </div>
+          <div className="text-center mb-10 border-4 border-white bg-[#D9D9D9] p-6 shadow-[8px_8px_0_0_#0033A0]">
+            <h1 className="text-4xl md:text-6xl font-black text-[#00183F] mb-2 uppercase tracking-tight">
+              {t.title}
+            </h1>
+            <p className="text-lg text-[#0033A0] font-black uppercase tracking-widest bg-white border-2 border-[#00183F] inline-block px-4 py-1 shadow-[2px_2px_0_0_#0033A0]">
+              {t.subtitle}
+            </p>
+          </div>
 
-        {/* Final result */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: knockoutRounds.length * 0.3 + 0.5 }}
-          className="text-center"
-        >
-          {isChampion ? (
-            <div className="mb-6">
-              <span className="text-6xl block mb-3">🏆</span>
-              <h2 className="text-3xl font-black text-plum">
-                {TRANSLATIONS[lang].champion_exclaim}
-              </h2>
-              <p className="text-gray-500 mt-2">
-                {TRANSLATIONS[lang].you_conquered}
-              </p>
+          <div className="mb-10">
+            <div className="space-y-8">
+              <AnimatePresence>
+                {roundsWithTiming.map(({ roundData, startTick }, idx) => (
+                  <KnockoutMatch 
+                    key={idx} 
+                    roundData={roundData} 
+                    userTeamName={userTeamName} 
+                    tick={tick}
+                    startTick={startTick}
+                  />
+                ))}
+              </AnimatePresence>
+              <div ref={endRef} className="h-4" />
             </div>
-          ) : (
-            <div className="mb-6">
-              <span className="text-5xl block mb-3">💔</span>
-              <h2 className="text-2xl font-bold text-gray-700">
-                {TRANSLATIONS[lang].journey_over}
-              </h2>
-              <p className="text-gray-500 mt-2">
-                {TRANSLATIONS[lang].valiant_effort}
-              </p>
-            </div>
+          </div>
+
+          {showRemainingContent && (
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              {/* CORREÇÃO AQUI: Trocamos o componente <Card> por uma <div> normal */}
+              <div className={`text-center mb-8 border-4 border-white p-8 shadow-[12px_12px_0_0_#00183F] ${isChampion ? "bg-amber-400" : "bg-rose-600"}`}>
+                <h3 className={`text-4xl md:text-5xl font-black uppercase tracking-widest ${isChampion ? "text-[#00183F]" : "text-white"}`}>
+                  {isChampion ? t.champion : t.eliminated}
+                </h3>
+              </div>
+
+              <div className="text-center mb-10">
+                <Button variant="primary" size="lg" onClick={handleFinish} className="w-full md:w-auto min-w-[300px]">
+                  {t.viewResults}
+                </Button>
+              </div>
+            </motion.div>
           )}
 
-          <Button
-            variant="primary"
-            size="lg"
-            onClick={handleViewResults}
-            className="min-w-[200px]"
-          >
-            {TRANSLATIONS[lang].see_results}
-          </Button>
         </motion.div>
-      </motion.div>
+      </div>
     </div>
   );
 }
