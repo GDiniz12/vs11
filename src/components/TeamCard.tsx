@@ -43,10 +43,15 @@ export default function TeamCard({
         {/* Lista de Jogadores */}
         <div className="space-y-2">
           {team.players.map((player, idx) => {
-            const disabled = !canPlayerFillAnyRemaining(
+            // Verifica se o jogador já está em algum slot do time
+            const isAlreadyDrafted = slots.some((s) => s.player?.name === player.name);
+            
+            // O botão ficará desabilitado se o jogador já estiver no time OU se não houver posição livre
+            const disabled = isAlreadyDrafted || !canPlayerFillAnyRemaining(
               player.positions,
               slots
             );
+            
             const isSelected = selectedPlayer?.name === player.name && selectedPlayer?.teamKey === player.teamKey;
             
             return (
