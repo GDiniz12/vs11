@@ -4,7 +4,8 @@ export type PositionCode =
   | "ME" | "MD"
   | "PE" | "PD" | "CA";
 
-export type FormationType = "4-3-3" | "4-4-2" | "3-4-3";
+// Adicionadas as 3 novas opções
+export type FormationType = "4-3-3" | "4-4-2" | "3-4-3" | "3-5-2" | "5-4-1" | "4-2-3-1";
 
 export interface Player {
   name: string;
