@@ -12,10 +12,17 @@ interface SquadDisplayProps {
 export default function SquadDisplay({ slots }: SquadDisplayProps) {
   const { lang } = useLanguage();
   
+  // Calcula o over geral somando as notas e dividindo por 11
+  const totalOvr = slots.reduce((sum, slot) => sum + (slot.player ? slot.player.overall : 0), 0);
+  const teamOvr = Math.round(totalOvr / 11);
+  
   return (
     <div className="bg-white text-[#00183F] border-4 border-[#00183F] p-4 shadow-[8px_8px_0_0_rgba(0,0,0,0.5)] h-full">
-      <h3 className="text-xl font-black uppercase tracking-widest border-b-4 border-[#00183F] pb-2 mb-4">
-        {lang === "pt" ? "Seu Elenco" : "Your Squad"}
+      <h3 className="text-xl font-black uppercase tracking-widest border-b-4 border-[#00183F] pb-2 mb-4 flex justify-between items-center">
+        <span>{lang === "pt" ? "Seu Elenco" : "Your Squad"}</span>
+        <span className="text-sm md:text-base bg-[#0033A0] text-white border-2 border-[#00183F] px-2 py-0.5 shadow-[2px_2px_0_0_#00183F]">
+          OVR: {teamOvr}
+        </span>
       </h3>
       
       <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px] md:max-h-full pr-2">
