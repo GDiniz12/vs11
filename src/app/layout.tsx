@@ -10,6 +10,11 @@ export const metadata: Metadata = {
   title: "16a0",
   description:
     "Build your dream squad and conquer Europe in this premium football simulation game.",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+  },
+
 };
 
 export default function RootLayout({
