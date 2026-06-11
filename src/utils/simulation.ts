@@ -18,15 +18,20 @@ export function simulateMatch(
   awayTactic: "defensive" | "balanced" | "offensive" = "balanced",
   homeIsUser: boolean = false,
   awayIsUser: boolean = false,
-  difficulty: "easy" | "medium" | "impossible" = "medium"
+  difficulty: "easy" | "medium" | "impossible" = "medium",
+  homeChemistry: number = 100, // NOVO PARÂMETRO
+  awayChemistry: number = 100  // NOVO PARÂMETRO
 ): { homeGoals: number; awayGoals: number } {
   const BASE_GOALS = 1.25;
   const HOME_ADVANTAGE = 0.2;
 
-  let hStr = homeStrength;
-  let aStr = awayStrength;
+  // Modificador de Entrosamento: Química 100 = +5 de OVR. Química 0 = -5 de OVR.
+  const hChemMod = (homeChemistry - 50) / 10;
+  const aChemMod = (awayChemistry - 50) / 10;
 
-  // DIFICULDADE: Dá um bônus ou punição secreta no overall do usuário
+  let hStr = homeStrength + hChemMod;
+  let aStr = awayStrength + aChemMod;
+
   if (homeIsUser) {
     if (difficulty === "easy") hStr += 5;
     if (difficulty === "impossible") hStr -= 8;
@@ -36,19 +41,15 @@ export function simulateMatch(
     if (difficulty === "impossible") aStr -= 8;
   }
 
-  // REALISMO (Aumentado o peso da diferença de 0.04 para 0.082)
   const diff = hStr - aStr;
   let homeExpected = Math.max(0.1, BASE_GOALS + HOME_ADVANTAGE + diff * 0.082);
   let awayExpected = Math.max(0.1, BASE_GOALS - diff * 0.082);
 
-  // TÁTICA: Ajustar os gols esperados
   const applyTactic = (teamTactic: string, isHome: boolean) => {
     if (teamTactic === "offensive") {
-      // Time ofensivo cria mais chances, mas deixa espaços (sofre mais)
       if (isHome) { homeExpected *= 1.35; awayExpected *= 1.25; }
       else { awayExpected *= 1.35; homeExpected *= 1.25; }
     } else if (teamTactic === "defensive") {
-      // Time defensivo cria menos, mas fecha a casinha
       if (isHome) { homeExpected *= 0.65; awayExpected *= 0.65; }
       else { awayExpected *= 0.65; homeExpected *= 0.65; }
     }

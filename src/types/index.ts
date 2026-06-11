@@ -5,7 +5,6 @@ export type PositionCode =
   | "PE" | "PD" | "CA";
 
 export type FormationType = "4-3-3" | "4-4-2" | "3-4-3" | "3-5-2" | "5-4-1" | "4-2-3-1";
-
 export type GameMode = "classic" | "hardcore";
 export type TacticType = "defensive" | "balanced" | "offensive";
 export type DifficultyType = "easy" | "medium" | "impossible";
@@ -14,6 +13,7 @@ export interface Player {
   name: string;
   overall: number;
   positions: PositionCode[];
+  nationality: string; // <-- NOVO
   teamName: string;
   teamKey: string;
 }
@@ -72,10 +72,4 @@ export interface GameStats {
   goalsConceded: number;
 }
 
-export type GamePhase =
-  | "home"
-  | "formation"
-  | "draft"
-  | "league"
-  | "knockout"
-  | "result";
+export type GamePhase = "home" | "formation" | "draft" | "league" | "knockout" | "result";

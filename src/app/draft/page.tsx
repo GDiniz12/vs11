@@ -21,6 +21,7 @@ export default function DraftPage() {
     draftRound,
     currentDraftTeam,
     slots,
+    formation,
     assignPlayerToSlot,
     drawNextTeam,
     gameMode,
@@ -30,42 +31,33 @@ export default function DraftPage() {
   const [showPositionPicker, setShowPositionPicker] = useState(false);
   const [availableSlots, setAvailableSlots] = useState<FormationSlot[]>([]);
   
-  // Estados para a Animação da Roleta
   const allTeams = useMemo(() => getAllTeams(americans, europeans), []);
   const [isRolling, setIsRolling] = useState(false);
   const [rollingTeam, setRollingTeam] = useState<TeamData | null>(null);
 
-  // Limita as chances de acordo com o modo
   const maxRerolls = gameMode === "hardcore" ? 1 : 3;
   const [rerollsLeft, setRerollsLeft] = useState(maxRerolls);
 
   useEffect(() => {
-    if (draftRound === 0) {
-      setRerollsLeft(maxRerolls);
-    }
+    if (draftRound === 0) setRerollsLeft(maxRerolls);
   }, [draftRound, maxRerolls]);
 
   useEffect(() => {
-    if (!currentDraftTeam && draftRound < 11) {
-      drawNextTeam();
-    }
+    if (!currentDraftTeam && draftRound < 11) drawNextTeam();
   }, [currentDraftTeam, draftRound, drawNextTeam]);
 
-  // Efeito da Roleta sempre que um novo time for sorteado
   useEffect(() => {
     if (currentDraftTeam) {
       setIsRolling(true);
       let ticks = 0;
-      // Troca os times a cada 100ms para dar efeito de roleta super rápida
       const interval = setInterval(() => {
         setRollingTeam(allTeams[Math.floor(Math.random() * allTeams.length)]);
         ticks++;
-        if (ticks >= 15) { // 15 * 100ms = 1500ms (1.5s de roleta)
+        if (ticks >= 15) { 
           clearInterval(interval);
           setIsRolling(false);
         }
-      }, 100);
-
+      }, 80);
       return () => clearInterval(interval);
     }
   }, [currentDraftTeam, allTeams]);
@@ -78,17 +70,16 @@ export default function DraftPage() {
   ) ?? true;
 
   const handleReroll = () => {
-    if (isRolling) return; // Impede reroll enquanto a roleta roda
-    if (!hasSelectablePlayers) {
-      drawNextTeam();
-    } else if (rerollsLeft > 0) {
+    if (isRolling) return; 
+    if (!hasSelectablePlayers) drawNextTeam();
+    else if (rerollsLeft > 0) {
       setRerollsLeft((prev) => prev - 1);
       drawNextTeam();
     }
   };
 
   const handlePlayerSelect = (player: Player) => {
-    if (isRolling) return; // Impede selecionar na roleta
+    if (isRolling) return;
     const isAlreadyDrafted = slots.some((s) => s.player?.name === player.name);
     if (isAlreadyDrafted) return;
 
@@ -96,14 +87,12 @@ export default function DraftPage() {
     const avail = slots.filter((s) => availIds.includes(s.id));
 
     if (avail.length === 0) return;
-
     if (avail.length === 1) {
       assignPlayerToSlot(player, avail[0].id);
       setSelectedPlayer(null);
       setShowPositionPicker(false);
       return;
     }
-
     setSelectedPlayer(player);
     setAvailableSlots(avail);
     setShowPositionPicker(true);
@@ -128,26 +117,8 @@ export default function DraftPage() {
   const { lang } = useLanguage();
 
   const tDraft = {
-    pt: {
-      title: "Opções de Sorteio",
-      chances: "Sorteios Restantes",
-      freeDesc: "Nenhum Jogador Encaixa - Sorteio Livre",
-      reroll: "Refazer Sorteio",
-      freeReroll: "Sorteio Grátis",
-      ready: "Elenco pronto para a Glória!",
-      simulateBtn: "Simular Agora",
-      rolling: "Sorteando..."
-    },
-    en: {
-      title: "Draft Options",
-      chances: "Re-rolls Left",
-      freeDesc: "No Players Fit - Free Re-roll",
-      reroll: "Re-roll Draft",
-      freeReroll: "Free Re-roll",
-      ready: "Squad ready for Glory!",
-      simulateBtn: "Simulate Now",
-      rolling: "Drawing..."
-    }
+    pt: { title: "Opções de Sorteio", chances: "Sorteios Restantes", freeDesc: "Nenhum Jogador Encaixa", reroll: "Refazer Sorteio", freeReroll: "Sorteio Grátis", ready: "Elenco pronto para a Glória!", simulateBtn: "Simular Agora", rolling: "Sorteando..." },
+    en: { title: "Draft Options", chances: "Re-rolls Left", freeDesc: "No Players Fit", reroll: "Re-roll Draft", freeReroll: "Free Re-roll", ready: "Squad ready for Glory!", simulateBtn: "Simulate Now", rolling: "Drawing..." }
   }[lang];
 
   const isDraftComplete = draftRound >= 11;
@@ -155,27 +126,28 @@ export default function DraftPage() {
 
   return (
     <div className="min-h-screen bg-[#00183F] px-4 py-8 md:py-12 max-w-7xl mx-auto font-sans text-white">
-      {/* CABEÇALHO */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-8 border-4 border-white bg-[#D9D9D9] p-4 md:p-6 shadow-[8px_8px_0_0_#0033A0]"
       >
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
-          <h1 className="text-3xl md:text-4xl font-black text-[#00183F] uppercase tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl md:text-4xl font-black text-[#00183F] uppercase tracking-tight flex items-center gap-3">
             {TRANSLATIONS[lang].build_your_squad}
             {gameMode === "hardcore" && (
               <span className="bg-rose-600 text-white text-xs px-2 py-1 border-2 border-[#00183F]">HARDCORE</span>
             )}
           </h1>
-          <div className="flex items-center gap-2 bg-white border-4 border-[#00183F] px-4 py-2 shadow-[4px_4px_0_0_rgba(0,0,0,0.5)]">
-            <span className="text-xs md:text-sm font-black text-gray-500 uppercase">
-              {TRANSLATIONS[lang].round_label}
-            </span>
-            <span className="text-xl md:text-2xl font-black text-[#0033A0]">
-              {Math.min(draftRound + 1, 11)}
-            </span>
-            <span className="text-sm md:text-lg font-black text-[#00183F]">/ 11</span>
+          
+          {/* APENAS O CONTADOR DE ROUNDS */}
+          <div className="flex items-center gap-2">
+            <div className="flex flex-col items-center bg-white border-4 border-[#00183F] px-3 md:px-4 py-1 shadow-[4px_4px_0_0_rgba(0,0,0,0.5)]">
+              <span className="text-[10px] md:text-xs font-black text-gray-500 uppercase">{TRANSLATIONS[lang].round_label}</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl md:text-2xl font-black text-[#0033A0]">{Math.min(draftRound + 1, 11)}</span>
+                <span className="text-sm md:text-lg font-black text-[#00183F]">/ 11</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -190,7 +162,6 @@ export default function DraftPage() {
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        
         <div className="flex flex-col gap-6">
           {isDraftComplete ? (
             <motion.div
@@ -242,9 +213,7 @@ export default function DraftPage() {
                     }
                   `}
                 >
-                  {isRolling 
-                    ? tDraft.rolling 
-                    : (!hasSelectablePlayers ? tDraft.freeReroll : `${tDraft.reroll} (${rerollsLeft})`)}
+                  {isRolling ? tDraft.rolling : (!hasSelectablePlayers ? tDraft.freeReroll : `${tDraft.reroll} (${rerollsLeft})`)}
                 </button>
               </div>
 
@@ -256,7 +225,6 @@ export default function DraftPage() {
                     slots={slots}
                     onPlayerSelect={isRolling ? () => {} : handlePlayerSelect}
                     selectedPlayer={selectedPlayer}
-                    // Força ocultar os overall durante a roleta para efeito dramático
                     hideOverall={gameMode === "hardcore" || isRolling}
                   />
                 )}
@@ -269,6 +237,7 @@ export default function DraftPage() {
           <Card className="p-4 md:p-6 bg-[#1E293B]">
             <FootballPitch
               slots={slots}
+              formation={formation}
               highlightedSlots={highlightedSlotIds}
             />
           </Card>

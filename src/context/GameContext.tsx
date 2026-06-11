@@ -5,7 +5,7 @@ import { FormationType, FormationSlot, Player, TeamData, GamePhase, LeagueTeam, 
 import { useLanguage } from '@/context/LanguageContext';
 import { TRANSLATIONS } from '@/lib/constants';
 import { getFormationSlots } from '@/utils/formations';
-import { getRandomTeam, getAllTeams, shuffleArray } from '@/utils/helpers';
+import { getRandomTeam, getAllTeams, shuffleArray, calculateTeamChemistry } from '@/utils/helpers';
 import { calculateTeamStrength } from '@/utils/simulation';
 import { generateLeaguePhase, checkQualification, generateKnockoutRounds } from '@/utils/tournament';
 import { americans, europeans } from '@/data/data';
@@ -90,6 +90,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const userPlayers = prev.slots.filter((s) => s.player).map((s) => s.player!);
       const userStrength = calculateTeamStrength(userPlayers);
       const userTeamName = TRANSLATIONS[lang].your_team;
+      const userChemistry = calculateTeamChemistry(prev.slots, prev.formation); // NOVO
 
       const allDataTeams = getAllTeams(americans, europeans);
       const teamEntries = allDataTeams.map((t) => ({ name: t.name, strength: t.players.reduce((sum, p) => sum + p.overall, 0) / t.players.length }));
@@ -97,7 +98,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const shuffled = shuffleArray(teamEntries).slice(0, 35);
       const allTeams = [{ name: userTeamName, strength: userStrength }, ...shuffled];
 
-      const { userMatches, table } = generateLeaguePhase(userTeamName, userStrength, allTeams, prev.tactic, prev.difficulty);
+      const { userMatches, table } = generateLeaguePhase(userTeamName, userStrength, allTeams, prev.tactic, prev.difficulty, userChemistry);
 
       const stats: GameStats = { ...initialStats };
       userMatches.forEach((m) => {
@@ -119,8 +120,9 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setState((prev) => {
       const userPlayers = prev.slots.filter((s) => s.player).map((s) => s.player!);
       const userStrength = calculateTeamStrength(userPlayers);
+      const userChemistry = calculateTeamChemistry(prev.slots, prev.formation); // NOVO
 
-      const rounds = generateKnockoutRounds(prev.leagueTable, prev.userTeamName, userStrength, prev.tactic, prev.difficulty);
+      const rounds = generateKnockoutRounds(prev.leagueTable, prev.userTeamName, userStrength, prev.tactic, prev.difficulty, userChemistry);
 
       const newStats = { ...prev.stats };
       rounds.forEach((r) => {

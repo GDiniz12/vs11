@@ -68,6 +68,10 @@ export default function PlayerMarker({
               <span className="text-[6px] sm:text-[7px] md:text-[9px] font-bold mt-0.5 md:mt-1 truncate w-full px-0.5">
                 {slot.player!.name.split(" ").slice(-1)[0]}
               </span>
+              {/* BANDEIRA DO PAÍS ADICIONADA AQUI */}
+              <span className="text-[6px] sm:text-[8px] leading-none mt-0.5">
+                {slot.player!.nationality}
+              </span>
             </>
           ) : (
             <span className="text-[10px] md:text-[12px] font-black opacity-60">

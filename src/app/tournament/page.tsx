@@ -1,187 +1,168 @@
-"use client";
+import { LeagueTeam, MatchResult, KnockoutRound, TacticType, DifficultyType } from "@/types";
+import { simulateMatch } from "../../utils/simulation";
 
-import React, { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
-import { useGame } from "@/context/GameContext";
-import { checkQualification } from "@/utils/tournament";
-import LeagueTable from "@/components/LeagueTable";
-import MatchResultCard from "@/components/MatchResultCard";
-import Button from "@/components/ui/Button";
-import Card from "@/components/ui/Card";
-import { useLanguage } from "@/context/LanguageContext";
-import { TRANSLATIONS } from "@/lib/constants";
+interface TeamEntry {
+  name: string;
+  strength: number;
+}
 
-export default function TournamentPage() {
-  const router = useRouter();
-  const { lang } = useLanguage();
-  const {
-    leagueTable,
-    userMatches,
-    startLeaguePhase,
-    startKnockoutPhase,
-    userTeamName,
-    setPhase,
-  } = useGame();
+export function generateLeaguePhase(
+  userTeamName: string,
+  userStrength: number,
+  allTeams: TeamEntry[],
+  userTactic: TacticType = "balanced",
+  difficulty: DifficultyType = "medium",
+  userChemistry: number = 100 // NOVO
+): { userMatches: MatchResult[]; table: LeagueTeam[] } {
+  const teams = [...allTeams];
+  const standings: Record<string, any> = {};
 
-  const [visibleMatches, setVisibleMatches] = useState(0);
-  const matchesEndRef = useRef<HTMLDivElement>(null);
+  teams.forEach((t) => {
+    standings[t.name] = { played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, avgOverall: t.strength };
+  });
 
-  useEffect(() => {
-    if (leagueTable.length === 0) {
-      startLeaguePhase();
+  const userMatches: MatchResult[] = [];
+  const teamsCopy = [...teams];
+  const fixed = teamsCopy[0];
+  const rotating = teamsCopy.slice(1);
+
+  for (let round = 0; round < 8; round++) {
+    const roundTeams = [fixed, ...rotating];
+    const halfLen = Math.floor(roundTeams.length / 2);
+
+    for (let i = 0; i < halfLen; i++) {
+      const home = roundTeams[i];
+      const away = roundTeams[roundTeams.length - 1 - i];
+
+      if (!home || !away) continue;
+
+      const actualHome = round % 2 === 0 ? home : away;
+      const actualAway = round % 2 === 0 ? away : home;
+
+      const isHomeUser = actualHome.name === userTeamName;
+      const isAwayUser = actualAway.name === userTeamName;
+      
+      const hTactic = isHomeUser ? userTactic : "balanced";
+      const aTactic = isAwayUser ? userTactic : "balanced";
+      
+      const hChem = isHomeUser ? userChemistry : 100;
+      const aChem = isAwayUser ? userChemistry : 100;
+
+      const { homeGoals, awayGoals } = simulateMatch(
+        actualHome.strength,
+        actualAway.strength,
+        hTactic,
+        aTactic,
+        isHomeUser,
+        isAwayUser,
+        difficulty,
+        hChem,
+        aChem
+      );
+
+      const match: MatchResult = { homeTeam: actualHome.name, awayTeam: actualAway.name, homeGoals, awayGoals };
+
+      if (standings[actualHome.name]) {
+        standings[actualHome.name].played++;
+        standings[actualHome.name].goalsFor += homeGoals;
+        standings[actualHome.name].goalsAgainst += awayGoals;
+        if (homeGoals > awayGoals) standings[actualHome.name].won++;
+        else if (homeGoals === awayGoals) standings[actualHome.name].drawn++;
+        else standings[actualHome.name].lost++;
+      }
+
+      if (standings[actualAway.name]) {
+        standings[actualAway.name].played++;
+        standings[actualAway.name].goalsFor += awayGoals;
+        standings[actualAway.name].goalsAgainst += homeGoals;
+        if (awayGoals > homeGoals) standings[actualAway.name].won++;
+        else if (awayGoals === homeGoals) standings[actualAway.name].drawn++;
+        else standings[actualAway.name].lost++;
+      }
+
+      if (isHomeUser || isAwayUser) userMatches.push(match);
     }
-  }, [leagueTable.length, startLeaguePhase]);
-
-  // Efeito responsável pelo delay de 3 segundos na exibição de cada confronto da liga
-  useEffect(() => {
-    if (userMatches.length === 0) return;
-    
-    const interval = setInterval(() => {
-      setVisibleMatches((prev) => {
-        if (prev < userMatches.length) {
-          setTimeout(() => matchesEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
-          return prev + 1;
-        }
-        clearInterval(interval);
-        return prev;
-      });
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [userMatches]);
-
-  if (leagueTable.length === 0) {
-    return (
-      <div className="min-h-screen bg-[#00183F] flex items-center justify-center">
-        <div className="text-white font-black text-2xl uppercase tracking-widest animate-pulse">
-          {lang === "pt" ? "Simulando Confrontos..." : "Simulating Matches..."}
-        </div>
-      </div>
-    );
+    rotating.unshift(rotating.pop()!);
   }
 
-  const { qualified, position } = checkQualification(leagueTable, userTeamName);
-  const showRemainingContent = visibleMatches === userMatches.length;
+  const table: LeagueTeam[] = Object.entries(standings).map(([name, stats]) => ({
+    name, played: stats.played, won: stats.won, drawn: stats.drawn, lost: stats.lost, goalsFor: stats.goalsFor, goalsAgainst: stats.goalsAgainst, goalDifference: stats.goalsFor - stats.goalsAgainst, points: stats.won * 3 + stats.drawn, isUser: name === userTeamName, avgOverall: stats.avgOverall
+  }));
 
-  const handleContinue = () => {
-    if (qualified) {
-      startKnockoutPhase();
-      router.push("/knockout");
+  table.sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+    return b.goalsFor - a.goalsFor;
+  });
+
+  return { userMatches, table };
+}
+
+export function checkQualification(table: LeagueTeam[], userTeamName: string) {
+  const idx = table.findIndex((t) => t.name === userTeamName);
+  return { qualified: idx + 1 <= 16, position: idx + 1 };
+}
+
+export function generateKnockoutRounds(
+  table: LeagueTeam[],
+  userTeamName: string,
+  userStrength: number,
+  userTactic: TacticType = "balanced",
+  difficulty: DifficultyType = "medium",
+  userChemistry: number = 100 // NOVO
+): KnockoutRound[] {
+  const rounds: KnockoutRound[] = [];
+  const roundNames = ["Round of 16", "Quarter-finals", "Semi-finals", "Final"];
+  const qualified = table.slice(0, 16).filter((t) => t.name !== userTeamName);
+  const shuffled = [...qualified].sort(() => Math.random() - 0.5);
+
+  for (let i = 0; i < 4; i++) {
+    const roundName = roundNames[i];
+    const opponent = shuffled[Math.min(i, shuffled.length - 1)] || shuffled[0];
+    if (!opponent) break;
+
+    const oppStrength = opponent.avgOverall;
+
+    const getPenaltyWinner = () => {
+      let uStr = userStrength;
+      if (difficulty === "easy") uStr += 5;
+      if (difficulty === "impossible") uStr -= 8;
+      const winChance = Math.max(0.1, Math.min(0.9, 0.5 + ((uStr - oppStrength) * 0.02)));
+      return Math.random() < winChance ? userTeamName : opponent.name;
+    };
+
+    if (roundName === "Final") {
+      const { homeGoals, awayGoals } = simulateMatch(userStrength, oppStrength, userTactic, "balanced", true, false, difficulty, userChemistry, 100);
+      const leg1: MatchResult = { homeTeam: userTeamName, awayTeam: opponent.name, homeGoals, awayGoals };
+      
+      let winner = homeGoals > awayGoals ? userTeamName : awayGoals > homeGoals ? opponent.name : getPenaltyWinner();
+      rounds.push({ round: roundName, userOpponent: opponent.name, leg1, winner, userAdvanced: winner === userTeamName });
     } else {
-      setPhase("result");
-      router.push("/result");
+      const leg1Result = simulateMatch(userStrength, oppStrength, userTactic, "balanced", true, false, difficulty, userChemistry, 100);
+      const leg2Result = simulateMatch(oppStrength, userStrength, "balanced", userTactic, false, true, difficulty, 100, userChemistry);
+
+      const leg1: MatchResult = { homeTeam: userTeamName, awayTeam: opponent.name, homeGoals: leg1Result.homeGoals, awayGoals: leg1Result.awayGoals };
+      const leg2: MatchResult = { homeTeam: opponent.name, awayTeam: userTeamName, homeGoals: leg2Result.homeGoals, awayGoals: leg2Result.awayGoals };
+
+      const userAgg = leg1Result.homeGoals + leg2Result.awayGoals;
+      const oppAgg = leg1Result.awayGoals + leg2Result.homeGoals;
+
+      let winner;
+      if (userAgg > oppAgg) winner = userTeamName;
+      else if (oppAgg > userAgg) winner = opponent.name;
+      else {
+        const userAway = leg2Result.awayGoals;
+        const oppAway = leg1Result.awayGoals;
+        if (userAway > oppAway) winner = userTeamName;
+        else if (oppAway > userAway) winner = opponent.name;
+        else winner = getPenaltyWinner();
+      }
+
+      rounds.push({ round: roundName, userOpponent: opponent.name, leg1, leg2, winner, userAdvanced: winner === userTeamName });
     }
-  };
-
-  const title = lang === "pt" ? "SUPER MUNDIAL DE CLUBES" : "SUPER CLUB WORLD CUP";
-
-  return (
-    <div className="min-h-screen bg-[#00183F] px-4 py-10 font-sans text-white">
-      <div className="max-w-5xl mx-auto">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          
-          {/* Header Brutalista */}
-          <div className="text-center mb-10 border-4 border-white bg-[#D9D9D9] p-6 shadow-[8px_8px_0_0_#0033A0]">
-            <h1 className="text-4xl md:text-6xl font-black text-[#00183F] mb-2 uppercase tracking-tight">
-              {title}
-            </h1>
-            <p className="text-lg text-[#0033A0] font-black uppercase tracking-widest bg-white border-2 border-[#00183F] inline-block px-4 py-1">
-              {TRANSLATIONS[lang].league_phase}
-            </p>
-          </div>
-
-          {/* Partidas do Usuário com Revelação em Cascata */}
-          <div className="mb-10">
-            <h2 className="text-2xl font-black text-white uppercase tracking-wider mb-4 border-l-8 border-amber-400 pl-4">
-              {TRANSLATIONS[lang].your_matches}
-            </h2>
-            <div className="space-y-2">
-              <AnimatePresence>
-                {userMatches.slice(0, visibleMatches).map((match, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, x: -30, scale: 0.95 }}
-                    animate={{ opacity: 1, x: 0, scale: 1 }}
-                    transition={{ type: "spring", stiffness: 100 }}
-                  >
-                    <MatchResultCard
-                      match={match}
-                      userTeamName={userTeamName}
-                      stage={`${lang === "pt" ? "Rodada" : "Round"} ${idx + 1}`}
-                    />
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-              <div ref={matchesEndRef} />
-            </div>
-          </div>
-
-          {/* Elementos secundários revelados apenas ao fim das rodadas */}
-          {showRemainingContent && (
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              {/* Tabela de Classificação */}
-              <div className="mb-10">
-                <h2 className="text-2xl font-black text-white uppercase tracking-wider mb-4 border-l-8 border-emerald-500 pl-4">
-                  {TRANSLATIONS[lang].standings}
-                </h2>
-                <LeagueTable table={leagueTable} />
-                <div className="flex items-center gap-6 mt-4 text-xs font-black uppercase tracking-widest text-white">
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white bg-emerald-500" />
-                    <span>{TRANSLATIONS[lang].qualified_label}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white bg-rose-500" />
-                    <span>{TRANSLATIONS[lang].eliminated_label}</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status de Qualificação */}
-              <Card className="text-center mb-8 border-4 border-white">
-                <div className="py-4">
-                  {qualified ? (
-                    <>
-                      <h3 className="text-3xl font-black text-[#0033A0] mt-3 uppercase">
-                        {TRANSLATIONS[lang].qualified_title}
-                      </h3>
-                      <p className="text-[#00183F] mt-2 font-bold text-lg uppercase">
-                        {TRANSLATIONS[lang].you_finished}{" "}
-                        <span className="font-black text-emerald-600 border-b-4 border-emerald-600">{position}º</span>{" "}
-                        {TRANSLATIONS[lang].advance_to_knockout}
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <h3 className="text-3xl font-black text-rose-600 mt-3 uppercase">
-                        {TRANSLATIONS[lang].eliminated_label}
-                      </h3>
-                      <p className="text-[#00183F] mt-2 font-bold text-lg uppercase">
-                        {TRANSLATIONS[lang].you_finished}{" "}
-                        <span className="font-black text-rose-600 border-b-4 border-rose-600">{position}º</span>{" "}
-                        {TRANSLATIONS[lang].did_not_qualify}
-                      </p>
-                    </>
-                  )}
-                </div>
-              </Card>
-
-              {/* Botão de Direcionamento */}
-              <div className="text-center mb-10">
-                <Button variant="primary" size="lg" onClick={handleContinue} className="w-full md:w-auto">
-                  {qualified ? TRANSLATIONS[lang].continue_to_knockout : TRANSLATIONS[lang].view_results}
-                </Button>
-              </div>
-            </motion.div>
-          )}
-
-        </motion.div>
-      </div>
-    </div>
-  );
+    if (!rounds[rounds.length - 1].userAdvanced) break;
+    const oppIdx = shuffled.indexOf(opponent);
+    if (oppIdx !== -1) shuffled.splice(oppIdx, 1);
+  }
+  return rounds;
 }
