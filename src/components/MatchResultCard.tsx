@@ -23,23 +23,19 @@ const getLogoUrl = (teamName: string) => {
   return clubLogos[formatted] || "";
 };
 
-// Pega a lista de jogadores EXATAMENTE do ano que o time jogou
 const getOpponentPlayers = (teamName: string) => {
   const allTeams = { ...americans, ...europeans };
   
-  // Transforma "Real Madrid 2014" em "real-madrid-2014"
   const exactKey = teamName
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/\s+/g, "-");
   
-  // Procura primeiro pela chave exata (time + ano)
   if (allTeams[exactKey]) {
     return allTeams[exactKey].map((p: any) => p[0] as string);
   }
 
-  // Fallback (caso dê erro, ele procura pelo nome base)
   const baseName = exactKey.replace(/-\d{4}$/, "");
   const fallbackKey = Object.keys(allTeams).find((k) => k.startsWith(baseName));
   if (fallbackKey) {
@@ -111,47 +107,47 @@ export default function MatchResultCard({ match, userTeamName, index, stage }: M
     <div className="p-0 overflow-hidden bg-white text-[#00183F] border-4 border-[#00183F] shadow-[6px_6px_0_0_rgba(0,0,0,0.8)] flex flex-col mb-4 transition-transform hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[10px_10px_0_0_rgba(0,0,0,0.9)]">
       
       {stage && (
-        <div className="bg-[#00183F] text-white text-xs font-black uppercase px-4 py-1.5 tracking-widest border-b-4 border-[#00183F]">
+        <div className="bg-[#00183F] text-white text-[10px] md:text-xs font-black uppercase px-4 py-1.5 tracking-widest border-b-4 border-[#00183F]">
           {stage}
         </div>
       )}
 
       <div className="flex flex-col sm:flex-row items-stretch">
-        <div className={`w-full sm:w-4 min-h-[12px] sm:min-h-full ${isUserWinner ? "bg-emerald-500" : isDraw ? "bg-amber-400" : "bg-rose-500"} border-b-4 sm:border-b-0 sm:border-r-4 border-[#00183F]`} />
+        <div className={`w-full sm:w-4 min-h-[8px] sm:min-h-full ${isUserWinner ? "bg-emerald-500" : isDraw ? "bg-amber-400" : "bg-rose-500"} border-b-4 sm:border-b-0 sm:border-r-4 border-[#00183F]`} />
 
-        <div className="flex-1 p-4 flex flex-col justify-center">
-          <div className="flex items-center justify-between gap-4 flex-wrap sm:flex-nowrap">
+        <div className="flex-1 p-3 md:p-4 flex flex-col justify-center">
+          <div className="flex items-center justify-between gap-2 sm:gap-4 flex-nowrap">
             
             {/* Seu Time */}
-            <div className="flex-1 flex items-center justify-start gap-2 md:gap-3 min-w-[100px]">
+            <div className="flex-1 flex items-center justify-start gap-1.5 sm:gap-2 md:gap-3 min-w-0">
               {userLogo && (
-                <img src={userLogo} alt={userTeamName} className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-[2px_2px_0_rgba(0,0,0,0.3)] hidden sm:block" />
+                <img src={userLogo} alt={userTeamName} className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 object-contain flex-shrink-0 drop-shadow-[2px_2px_0_rgba(0,0,0,0.3)]" />
               )}
-              <div className="text-left">
-                <h3 className="text-sm md:text-xl font-black uppercase tracking-tight text-[#0033A0] truncate">
+              <div className="text-left min-w-0">
+                <h3 className="text-xs sm:text-sm md:text-xl font-black uppercase tracking-tight text-[#0033A0] truncate">
                   {userTeamName}
                 </h3>
-                <span className="text-[10px] font-bold text-gray-500 uppercase">{isHome ? "Mandante" : "Visitante"}</span>
+                <span className="text-[8px] sm:text-[10px] font-bold text-gray-500 uppercase">{isHome ? "Mandante" : "Visitante"}</span>
               </div>
             </div>
 
             {/* Placar Brutal */}
-            <div className="flex items-center gap-2 bg-[#D9D9D9] border-2 border-[#00183F] px-4 py-2 shadow-[3px_3px_0_0_rgba(0,0,0,0.2)]">
-              <span className="text-xl md:text-3xl font-black">{userGoals}</span>
-              <span className="text-sm md:text-lg font-black text-gray-400">X</span>
-              <span className="text-xl md:text-3xl font-black">{oppGoals}</span>
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-[#D9D9D9] border-2 border-[#00183F] px-2 sm:px-4 py-1.5 sm:py-2 shadow-[3px_3px_0_0_rgba(0,0,0,0.2)] flex-shrink-0">
+              <span className="text-lg sm:text-xl md:text-3xl font-black">{userGoals}</span>
+              <span className="text-xs sm:text-sm md:text-lg font-black text-gray-400">X</span>
+              <span className="text-lg sm:text-xl md:text-3xl font-black">{oppGoals}</span>
             </div>
 
             {/* Adversário */}
-            <div className="flex-1 flex items-center justify-end gap-2 md:gap-3 min-w-[100px]">
-              <div className="text-right">
-                <h3 className="text-sm md:text-xl font-black uppercase tracking-tight text-rose-700 truncate">
+            <div className="flex-1 flex items-center justify-end gap-1.5 sm:gap-2 md:gap-3 min-w-0">
+              <div className="text-right min-w-0">
+                <h3 className="text-xs sm:text-sm md:text-xl font-black uppercase tracking-tight text-rose-700 truncate">
                   {opponentName}
                 </h3>
-                <span className="text-[10px] font-bold text-gray-500 uppercase">{isHome ? "Visitante" : "Mandante"}</span>
+                <span className="text-[8px] sm:text-[10px] font-bold text-gray-500 uppercase">{isHome ? "Visitante" : "Mandante"}</span>
               </div>
               {oppLogo && (
-                <img src={oppLogo} alt={opponentName} className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-[2px_2px_0_rgba(0,0,0,0.3)] hidden sm:block" />
+                <img src={oppLogo} alt={opponentName} className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 object-contain flex-shrink-0 drop-shadow-[2px_2px_0_rgba(0,0,0,0.3)]" />
               )}
             </div>
 
@@ -159,13 +155,13 @@ export default function MatchResultCard({ match, userTeamName, index, stage }: M
 
           {/* Área dos Artilheiros */}
           {(userScorers.length > 0 || oppScorers.length > 0) && (
-            <div className="mt-4 pt-3 border-t-2 border-dashed border-[#00183F]/20 flex justify-between gap-4 text-[10px] md:text-xs font-black uppercase tracking-wider">
+            <div className="mt-3 md:mt-4 pt-2 md:pt-3 border-t-2 border-dashed border-[#00183F]/20 flex justify-between gap-4 text-[9px] md:text-xs font-black uppercase tracking-wider">
               
               <div className="flex-1 flex flex-col items-start gap-1">
                 {userScorers.map((scorer, i) => (
                   <div key={`user-scorer-${i}`} className="flex items-center gap-1.5 text-[#0033A0]">
-                    <span className="text-[8px] md:text-[10px] drop-shadow-sm">⚽</span>
-                    <span>{scorer}</span>
+                    <span className="text-[8px] md:text-[10px] drop-shadow-sm flex-shrink-0">⚽</span>
+                    <span className="truncate">{scorer}</span>
                   </div>
                 ))}
               </div>
@@ -173,8 +169,8 @@ export default function MatchResultCard({ match, userTeamName, index, stage }: M
               <div className="flex-1 flex flex-col items-end gap-1">
                 {oppScorers.map((scorer, i) => (
                   <div key={`opp-scorer-${i}`} className="flex items-center justify-end gap-1.5 text-rose-700">
-                    <span>{scorer}</span>
-                    <span className="text-[8px] md:text-[10px] drop-shadow-sm">⚽</span>
+                    <span className="truncate">{scorer}</span>
+                    <span className="text-[8px] md:text-[10px] drop-shadow-sm flex-shrink-0">⚽</span>
                   </div>
                 ))}
               </div>
