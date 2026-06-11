@@ -13,9 +13,15 @@ export interface Player {
   name: string;
   overall: number;
   positions: PositionCode[];
-  nationality: string; // <-- NOVO
+  nationality: string;
   teamName: string;
   teamKey: string;
+}
+
+export interface Manager {
+  tecnico: string;
+  clubeAno: string;
+  nacionalidade: string;
 }
 
 export interface FormationSlot {

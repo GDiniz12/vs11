@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FormationSlot, FormationType } from "@/types";
+import { FormationSlot, FormationType, Manager } from "@/types";
 import PlayerMarker from "./PlayerMarker";
 import { FORMATION_LINKS } from "@/utils/formations";
 import { getLinkChemistry, getLinkColor } from "@/utils/helpers";
@@ -11,11 +11,12 @@ interface FootballPitchProps {
   formation?: FormationType | null;
   onSlotClick?: (id: number) => void;
   highlightedSlots?: number[];
+  manager?: Manager | null;
 }
 
-export default function FootballPitch({ slots, formation, onSlotClick, highlightedSlots = [] }: FootballPitchProps) {
+export default function FootballPitch({ slots, formation, onSlotClick, highlightedSlots = [], manager }: FootballPitchProps) {
   return (
-    <div className="w-full max-w-[420px] mx-auto p-2">
+    <div className="w-full max-w-[420px] mx-auto p-2 relative">
       <div className="relative w-full rounded-none border-4 border-white shadow-[12px_12px_0_0_rgba(0,0,0,0.7)]" style={{ paddingBottom: "145%", background: "#1A3B2B" }}>
         
         {/* Linhas de marcação do campo (Cosmético) */}
@@ -48,6 +49,14 @@ export default function FootballPitch({ slots, formation, onSlotClick, highlight
         {slots.map((slot) => (
           <PlayerMarker key={slot.id} slot={slot} onClick={onSlotClick ? () => onSlotClick(slot.id) : undefined} isHighlighted={highlightedSlots.includes(slot.id)} />
         ))}
+
+        {/* TÉCNICO (EXTREMA ESQUERDA ABAIXO) */}
+        {manager && (
+          <div className="absolute bottom-2 left-2 bg-[#00183F] border-2 border-white text-white px-2 py-1 shadow-[3px_3px_0_0_rgba(0,0,0,0.6)] flex items-center gap-1 md:gap-2 z-10 pointer-events-none">
+            <span className="text-[9px] md:text-[10px] font-black text-amber-400">TEC</span>
+            <span className="text-[10px] md:text-xs font-black uppercase whitespace-nowrap">{manager.tecnico}</span>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGame } from "@/context/GameContext";
 import { Player, FormationSlot, TeamData } from "@/types";
-import { getAvailablePositions, getAllTeams } from "@/utils/helpers";
+import { getAvailablePositions, getAllTeams, getCountryEmoji } from "@/utils/helpers";
 import { americans, europeans } from "@/data/data";
 import FootballPitch from "@/components/FootballPitch";
 import TeamCard from "@/components/TeamCard";
@@ -20,6 +20,9 @@ export default function DraftPage() {
   const {
     draftRound,
     currentDraftTeam,
+    currentDraftManagers,
+    manager,
+    assignManager,
     slots,
     formation,
     assignPlayerToSlot,
@@ -38,16 +41,20 @@ export default function DraftPage() {
   const maxRerolls = gameMode === "hardcore" ? 1 : 3;
   const [rerollsLeft, setRerollsLeft] = useState(maxRerolls);
 
+  const isManagerDraft = draftRound === 11;
+  const isDraftComplete = draftRound >= 12;
+
   useEffect(() => {
     if (draftRound === 0) setRerollsLeft(maxRerolls);
   }, [draftRound, maxRerolls]);
 
   useEffect(() => {
     if (!currentDraftTeam && draftRound < 11) drawNextTeam();
-  }, [currentDraftTeam, draftRound, drawNextTeam]);
+    if (draftRound === 11 && currentDraftManagers.length === 0) drawNextTeam();
+  }, [currentDraftTeam, currentDraftManagers.length, draftRound, drawNextTeam]);
 
   useEffect(() => {
-    if (currentDraftTeam) {
+    if (currentDraftTeam && !isManagerDraft) {
       setIsRolling(true);
       let ticks = 0;
       const interval = setInterval(() => {
@@ -60,7 +67,7 @@ export default function DraftPage() {
       }, 80);
       return () => clearInterval(interval);
     }
-  }, [currentDraftTeam, allTeams]);
+  }, [currentDraftTeam, allTeams, isManagerDraft]);
 
   const hasSelectablePlayers = currentDraftTeam?.players.some(
     (p) => {
@@ -71,7 +78,7 @@ export default function DraftPage() {
 
   const handleReroll = () => {
     if (isRolling) return; 
-    if (!hasSelectablePlayers) drawNextTeam();
+    if (!isManagerDraft && !hasSelectablePlayers) drawNextTeam();
     else if (rerollsLeft > 0) {
       setRerollsLeft((prev) => prev - 1);
       drawNextTeam();
@@ -117,11 +124,10 @@ export default function DraftPage() {
   const { lang } = useLanguage();
 
   const tDraft = {
-    pt: { title: "Opções de Sorteio", chances: "Sorteios Restantes", freeDesc: "Nenhum Jogador Encaixa", reroll: "Refazer Sorteio", freeReroll: "Sorteio Grátis", ready: "Elenco pronto para a Glória!", simulateBtn: "Simular Agora", rolling: "Sorteando..." },
-    en: { title: "Draft Options", chances: "Re-rolls Left", freeDesc: "No Players Fit", reroll: "Re-roll Draft", freeReroll: "Free Re-roll", ready: "Squad ready for Glory!", simulateBtn: "Simulate Now", rolling: "Drawing..." }
+    pt: { title: "Opções de Sorteio", chances: "Sorteios Restantes", freeDesc: "Nenhum Jogador Encaixa", reroll: "Refazer Sorteio", freeReroll: "Sorteio Grátis", ready: "Elenco pronto para a Glória!", simulateBtn: "Simular Agora", rolling: "Sorteando...", managerTitle: "Escolha seu Técnico" },
+    en: { title: "Draft Options", chances: "Re-rolls Left", freeDesc: "No Players Fit", reroll: "Re-roll Draft", freeReroll: "Free Re-roll", ready: "Squad ready for Glory!", simulateBtn: "Simulate Now", rolling: "Drawing...", managerTitle: "Choose your Manager" }
   }[lang];
 
-  const isDraftComplete = draftRound >= 11;
   const teamToDisplay = isRolling ? (rollingTeam || currentDraftTeam) : currentDraftTeam;
 
   return (
@@ -139,13 +145,12 @@ export default function DraftPage() {
             )}
           </h1>
           
-          {/* APENAS O CONTADOR DE ROUNDS */}
           <div className="flex items-center gap-2">
             <div className="flex flex-col items-center bg-white border-4 border-[#00183F] px-3 md:px-4 py-1 shadow-[4px_4px_0_0_rgba(0,0,0,0.5)]">
               <span className="text-[10px] md:text-xs font-black text-gray-500 uppercase">{TRANSLATIONS[lang].round_label}</span>
               <div className="flex items-baseline gap-1">
-                <span className="text-xl md:text-2xl font-black text-[#0033A0]">{Math.min(draftRound + 1, 11)}</span>
-                <span className="text-sm md:text-lg font-black text-[#00183F]">/ 11</span>
+                <span className="text-xl md:text-2xl font-black text-[#0033A0]">{Math.min(draftRound + 1, 12)}</span>
+                <span className="text-sm md:text-lg font-black text-[#00183F]">/ 12</span>
               </div>
             </div>
           </div>
@@ -155,7 +160,7 @@ export default function DraftPage() {
           <motion.div
             className="h-full bg-[#0033A0] border-r-4 border-[#00183F]"
             initial={{ width: 0 }}
-            animate={{ width: `${(Math.min(draftRound, 11) / 11) * 100}%` }}
+            animate={{ width: `${(Math.min(draftRound, 12) / 12) * 100}%` }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           />
         </div>
@@ -185,6 +190,51 @@ export default function DraftPage() {
                 {tDraft.simulateBtn}
               </button>
             </motion.div>
+          ) : isManagerDraft ? (
+            <>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white border-4 border-[#00183F] p-4 shadow-[6px_6px_0_0_#0033A0]">
+                <div className="mb-4 sm:mb-0">
+                  <h3 className="text-base md:text-lg font-black text-[#00183F] uppercase leading-none">
+                    {tDraft.managerTitle}
+                  </h3>
+                  <p className="text-xs md:text-sm font-bold uppercase mt-1 text-gray-500">
+                    {tDraft.chances}: {rerollsLeft}/{maxRerolls}
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleReroll}
+                  disabled={rerollsLeft === 0}
+                  className={`
+                    px-4 md:px-6 py-2 md:py-3 font-black uppercase text-sm md:text-base tracking-widest border-4 border-[#00183F] transition-all duration-75 w-full sm:w-auto
+                    ${rerollsLeft > 0
+                        ? "bg-amber-400 text-[#00183F] shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#00183F]"
+                        : "bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed shadow-none"
+                    }
+                  `}
+                >
+                  {`${tDraft.reroll} (${rerollsLeft})`}
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {currentDraftManagers.map((mgr, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => assignManager(mgr)}
+                    className="bg-white border-4 border-[#00183F] p-4 cursor-pointer hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#0033A0] transition-transform flex flex-col"
+                  >
+                    <span className="font-black text-[#00183F] text-lg md:text-xl uppercase leading-none">{mgr.tecnico}</span>
+                    <span className="text-xs md:text-sm font-black text-[#0033A0] uppercase mt-2">
+                      {mgr.clubeAno.replace(/-/g, " ")}
+                    </span>
+                    <span className="text-[10px] md:text-xs font-black text-gray-400 uppercase mt-2 border-t-2 border-dashed pt-2">
+                      {getCountryEmoji(mgr.nacionalidade)} {mgr.nacionalidade}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
             <>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white border-4 border-[#00183F] p-4 shadow-[6px_6px_0_0_#0033A0]">
@@ -239,6 +289,7 @@ export default function DraftPage() {
               slots={slots}
               formation={formation}
               highlightedSlots={highlightedSlotIds}
+              manager={manager}
             />
           </Card>
 

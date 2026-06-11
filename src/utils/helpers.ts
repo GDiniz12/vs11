@@ -1,4 +1,4 @@
-import { Player, PositionCode, TeamData, FormationSlot, FormationType } from "@/types";
+import { Player, PositionCode, TeamData, FormationSlot, FormationType, Manager } from "@/types";
 import { FORMATION_LINKS } from "./formations";
 
 export function getAvailablePositions(slots: FormationSlot[], positions: PositionCode[]): number[] {
@@ -43,7 +43,17 @@ export function shuffleArray<T>(array: T[]): T[] {
   return arr;
 }
 
-// LÓGICA DE ENTROSAMENTO (CHEMISTRY) - AINDA MAIS GENEROSA
+export function getCountryEmoji(country: string): string {
+  const map: Record<string, string> = {
+    "Brasil": "🇧🇷", "Portugal": "🇵🇹", "Argentina": "🇦🇷", "Espanha": "🇪🇸",
+    "Alemanha": "🇩🇪", "França": "🇫🇷", "Itália": "🇮🇹", "Escócia": "🏴󠁧󠁢󠁳󠁣󠁴󠁿",
+    "Países Baixos": "🇳🇱", "Hungria": "🇭🇺", "Inglaterra": "🏴󠁧󠁢󠁥󠁮󠁧󠁿",
+    "Áustria": "🇦🇹", "Uruguai": "🇺🇾"
+  };
+  return map[country] || country;
+}
+
+// LÓGICA DE ENTROSAMENTO (CHEMISTRY)
 export function getLinkChemistry(p1?: Player, p2?: Player): number {
   if (!p1 || !p2) return 0; 
   
@@ -53,13 +63,12 @@ export function getLinkChemistry(p1?: Player, p2?: Player): number {
   const sameBaseTeam = baseTeam1 === baseTeam2;
   const sameCountry = p1.nationality === p2.nationality;
 
-  if (exactTeam && sameCountry) return 100; // Verde: Mesma carta e país
-  if (exactTeam && !sameCountry) return 90; // Amarelo: Mesma carta, país dif
-  if (sameBaseTeam && sameCountry) return 85; // Laranja: Histórico de clube + país igual
-  if (sameCountry) return 75; // Azul: Mesmo país
-  if (sameBaseTeam) return 65; // Vermelho: Histórico de clube, países dif
+  if (exactTeam && sameCountry) return 100;
+  if (exactTeam && !sameCountry) return 90;
+  if (sameBaseTeam && sameCountry) return 85;
+  if (sameCountry) return 75;
+  if (sameBaseTeam) return 65;
 
-  // Bônus base grandão: Se os jogadores não tiverem nenhuma ligação, ganham 40!
   return 40; 
 }
 
@@ -69,11 +78,11 @@ export function getLinkColor(chem: number): string {
   if (chem >= 85) return "#f97316";  // Laranja
   if (chem >= 75) return "#3b82f6";  // Azul
   if (chem >= 65) return "#ef4444";  // Vermelho
-  if (chem > 0) return "rgba(255, 255, 255, 0.4)"; // Branco fraco para a ligação básica de 40
-  return "rgba(255, 255, 255, 0.1)"; // Transparente/tracejado se estiver vazio
+  if (chem > 0) return "rgba(255, 255, 255, 0.4)"; // Branco
+  return "rgba(255, 255, 255, 0.1)"; 
 }
 
-export function calculateTeamChemistry(slots: FormationSlot[], formation: FormationType | null): number {
+export function calculateTeamChemistry(slots: FormationSlot[], formation: FormationType | null, manager?: Manager | null): number {
   if (!formation) return 0;
   const links = FORMATION_LINKS[formation];
   if (!links || links.length === 0) return 0;
@@ -84,6 +93,21 @@ export function calculateTeamChemistry(slots: FormationSlot[], formation: Format
     const p2 = slots.find(s => s.id === id2)?.player;
     total += getLinkChemistry(p1, p2);
   });
+
+  // BÔNUS DO TÉCNICO
+  let managerBonus = 0;
+  if (manager) {
+    const managerEmoji = getCountryEmoji(manager.nacionalidade);
+    slots.forEach(s => {
+      if (s.player) {
+        if (s.player.teamKey === manager.clubeAno) {
+          managerBonus += 40; // Pontuação extra por treinar o clube/ano
+        } else if (s.player.nationality === managerEmoji) {
+          managerBonus += 30; // Pontuação extra pela nacionalidade
+        }
+      }
+    });
+  }
   
-  return Math.min(Math.floor(total / links.length), 100);
+  return Math.min(Math.floor((total + managerBonus) / links.length), 100);
 }
