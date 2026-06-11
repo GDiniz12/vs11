@@ -1,11 +1,12 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import { KnockoutRound } from "@/types";
 import MatchResultCard from "./MatchResultCard";
 import { useLanguage } from "@/context/LanguageContext";
-import { clubLogos } from "@/data/data";
+import { clubLogos, americans, europeans } from "@/data/data";
+import { useGame } from "@/context/GameContext";
 
 interface KnockoutMatchProps {
   roundData: KnockoutRound;
@@ -14,6 +15,7 @@ interface KnockoutMatchProps {
   startTick: number;
 }
 
+// Helper para buscar o logo
 const getLogoUrl = (teamName: string) => {
   if (!teamName) return "";
   let formatted = teamName
@@ -25,30 +27,125 @@ const getLogoUrl = (teamName: string) => {
   return clubLogos[formatted] || "";
 };
 
+// Helper para buscar o elenco do adversário para os pênaltis
+const getOpponentPlayers = (teamName: string) => {
+  const allTeams = { ...americans, ...europeans };
+  let formatted = teamName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, "-");
+  formatted = formatted.replace(/-\d{4}$/, "");
+  
+  const teamKey = Object.keys(allTeams).find((k) => k.startsWith(formatted));
+  if (teamKey) {
+    return allTeams[teamKey].map((p: any) => p[0] as string);
+  }
+  return ["Batedor 1", "Batedor 2", "Batedor 3", "Batedor 4", "Batedor 5"];
+};
+
 export default function KnockoutMatch({ roundData, userTeamName, tick, startTick }: KnockoutMatchProps) {
   const { lang } = useLanguage();
+  
+  // Puxando os slots do contexto para sabermos quem são os batedores do seu time
+  const { slots } = useGame();
   
   const showHeader = tick >= startTick; 
   const showLeg1 = tick >= startTick; 
   const showLeg2 = roundData.leg2 && tick >= startTick + 1; 
   const showAgg = roundData.leg2 ? tick >= startTick + 2 : tick >= startTick + 1; 
 
+  // === SIMULADOR DETERMINÍSTICO DE PÊNALTIS ===
+  // Calcula os totais e, em caso de empate, gera a série de 5 cobranças
+  const { isTie, userTotal, oppTotal, userPenalties, oppPenalties, userPenScore, oppPenScore } = useMemo(() => {
+    const isHomeLeg1 = roundData.leg1.homeTeam === userTeamName;
+    const userGoals1 = isHomeLeg1 ? roundData.leg1.homeGoals : roundData.leg1.awayGoals;
+    const oppGoals1 = isHomeLeg1 ? roundData.leg1.awayGoals : roundData.leg1.homeGoals;
+
+    let uTotal = userGoals1;
+    let oTotal = oppGoals1;
+
+    if (roundData.leg2) {
+      const isHomeLeg2 = roundData.leg2.homeTeam === userTeamName;
+      uTotal += isHomeLeg2 ? roundData.leg2.homeGoals : roundData.leg2.awayGoals;
+      oTotal += isHomeLeg2 ? roundData.leg2.awayGoals : roundData.leg2.homeGoals;
+    }
+
+    const tie = uTotal === oTotal;
+
+    let userPens: {name: string, scored: boolean}[] = [];
+    let oppPens: {name: string, scored: boolean}[] = [];
+    let uPenScore = 0;
+    let oPenScore = 0;
+
+    if (tie) {
+      // Cria uma semente única para a partida, garantindo que os batedores não mudem ao dar refresh
+      const seedString = `${userTeamName}-${roundData.userOpponent}-${roundData.round}-penalties`;
+      let seed = 0;
+      for (let i = 0; i < seedString.length; i++) {
+        seed = seedString.charCodeAt(i) + ((seed << 5) - seed);
+      }
+      
+      const random = () => {
+        let x = Math.sin(seed++) * 10000;
+        return x - Math.floor(x);
+      };
+
+      const shuffle = (array: any[]) => {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex !== 0) {
+          randomIndex = Math.floor(random() * currentIndex);
+          currentIndex--;
+          [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+      };
+
+      const userAdv = roundData.userAdvanced;
+      
+      // Placares reais possíveis para disputas de 5 cobranças
+      const scores = userAdv ? [[5,4], [5,3], [4,3], [4,2], [3,2]] : [[4,5], [3,5], [3,4], [2,4], [2,3]];
+      const chosenScore = scores[Math.floor(random() * scores.length)];
+      uPenScore = chosenScore[0];
+      oPenScore = chosenScore[1];
+
+      // Pega jogadores escalados do usuário
+      let uPlayers = slots && slots.length > 0 ? slots.filter(s => s.player).map(s => s.player!.name) : [];
+      if (uPlayers.length < 5) uPlayers = ["Goleiro", "Zagueiro", "Lateral", "Volante", "Atacante"]; // Fallback
+      
+      // Pega jogadores do adversário
+      let oPlayers = getOpponentPlayers(roundData.userOpponent);
+      if (oPlayers.length < 5) oPlayers = ["Jogador 1", "Jogador 2", "Jogador 3", "Jogador 4", "Jogador 5"];
+
+      // Embaralha o time inteiro e recorta apenas os 5 batedores
+      uPlayers = shuffle([...uPlayers]).slice(0, 5);
+      oPlayers = shuffle([...oPlayers]).slice(0, 5);
+
+      const createSeq = (goals: number) => {
+        let seq = Array(5).fill(false);
+        for(let i=0; i<goals; i++) seq[i] = true;
+        return shuffle(seq);
+      };
+
+      const uSeq = createSeq(uPenScore);
+      const oSeq = createSeq(oPenScore);
+
+      userPens = uPlayers.map((name, i) => ({ name, scored: uSeq[i] }));
+      oppPens = oPlayers.map((name, i) => ({ name, scored: oSeq[i] }));
+    }
+
+    return { 
+      isTie: tie, 
+      userTotal: uTotal, 
+      oppTotal: oTotal,
+      userPenalties: userPens,
+      oppPenalties: oppPens,
+      userPenScore: uPenScore,
+      oppPenScore: oPenScore
+    };
+  }, [roundData, userTeamName, slots]);
+
   if (!showHeader) return null;
-
-  const isHomeLeg1 = roundData.leg1.homeTeam === userTeamName;
-  const userGoals1 = isHomeLeg1 ? roundData.leg1.homeGoals : roundData.leg1.awayGoals;
-  const oppGoals1 = isHomeLeg1 ? roundData.leg1.awayGoals : roundData.leg1.homeGoals;
-
-  let userTotal = userGoals1;
-  let oppTotal = oppGoals1;
-
-  if (roundData.leg2) {
-    const isHomeLeg2 = roundData.leg2.homeTeam === userTeamName;
-    userTotal += isHomeLeg2 ? roundData.leg2.homeGoals : roundData.leg2.awayGoals;
-    oppTotal += isHomeLeg2 ? roundData.leg2.awayGoals : roundData.leg2.homeGoals;
-  }
-
-  const isTie = userTotal === oppTotal;
 
   const userLogo = getLogoUrl(userTeamName);
   const oppLogo = getLogoUrl(roundData.userOpponent);
@@ -60,6 +157,7 @@ export default function KnockoutMatch({ roundData, userTeamName, tick, startTick
       className="bg-[#1E293B] border-4 border-white p-4 md:p-6 shadow-[10px_10px_0_0_rgba(0,0,0,0.6)] mb-8"
     >
       
+      {/* Cabeçalho da Rodada */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 pb-4 border-b-4 border-white/20 gap-4">
         <h2 className="text-2xl md:text-3xl font-black text-amber-400 uppercase tracking-widest drop-shadow-[2px_2px_0_#00183F]">
           {roundData.round}
@@ -75,6 +173,7 @@ export default function KnockoutMatch({ roundData, userTeamName, tick, startTick
         )}
       </div>
 
+      {/* Cartões dos Jogos de Ida/Volta */}
       <div className="space-y-4 mb-6">
         {showLeg1 && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -97,31 +196,30 @@ export default function KnockoutMatch({ roundData, userTeamName, tick, startTick
         )}
       </div>
 
+      {/* Caixa Final: Placar Agregado e Pênaltis */}
       {showAgg && (
         <motion.div 
           initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-          className="bg-white text-[#00183F] border-4 border-[#00183F] p-4 md:p-6 text-center shadow-[4px_4px_0_0_#00183F]"
+          className="bg-white text-[#00183F] border-4 border-[#00183F] p-4 md:p-8 text-center shadow-[4px_4px_0_0_#00183F]"
         >
           <span className="block text-xs font-black uppercase text-gray-500 tracking-widest mb-4">
-            {lang === "pt" ? "Placar Agregado / Final" : "Aggregate / Final Score"}
+            {lang === "pt" ? "Placar Agregado" : "Aggregate Score"}
           </span>
           
           <div className="flex items-center justify-center gap-4 md:gap-8">
-            {/* Logo e Placar do Usuário */}
             <div className="flex items-center gap-3">
               {userLogo && (
                 <img src={userLogo} alt={userTeamName} className="w-10 h-10 md:w-14 md:h-14 object-contain drop-shadow-[2px_2px_0_rgba(0,0,0,0.3)] hidden sm:block" />
               )}
-              <span className={`text-4xl md:text-5xl font-black ${roundData.userAdvanced ? "text-emerald-600" : "text-[#00183F]"}`}>
+              <span className={`text-4xl md:text-5xl font-black ${roundData.userAdvanced && !isTie ? "text-emerald-600" : "text-[#00183F]"}`}>
                 {userTotal}
               </span>
             </div>
 
             <span className="text-gray-400 font-black text-2xl md:text-3xl">X</span>
             
-            {/* Logo e Placar do Adversário */}
             <div className="flex items-center gap-3">
-              <span className={`text-4xl md:text-5xl font-black ${!roundData.userAdvanced ? "text-rose-600" : "text-[#00183F]"}`}>
+              <span className={`text-4xl md:text-5xl font-black ${!roundData.userAdvanced && !isTie ? "text-rose-600" : "text-[#00183F]"}`}>
                 {oppTotal}
               </span>
               {oppLogo && (
@@ -130,12 +228,64 @@ export default function KnockoutMatch({ roundData, userTeamName, tick, startTick
             </div>
           </div>
           
+          {/* SESSÃO DE PÊNALTIS (Só renderiza se o agregado empatou) */}
           {isTie && (
-            <div className="mt-6 pt-3 border-t-4 border-dashed border-[#00183F]/20 text-sm md:text-base font-black text-amber-600 uppercase tracking-widest bg-[#D9D9D9]/30 p-2 border-2 border-amber-600 inline-block">
-              {lang === "pt" ? "Vencedor no Desempate:" : "Tiebreaker Winner:"}{" "}
-              <span className="text-[#00183F] ml-2">{roundData.userAdvanced ? userTeamName : roundData.userOpponent}</span>
+            <div className="mt-8 pt-8 border-t-4 border-dashed border-[#00183F]/20">
+              <h4 className="text-xl md:text-2xl font-black uppercase tracking-widest text-[#00183F] mb-6 text-center">
+                {lang === "pt" ? "Decisão nos Pênaltis" : "Penalty Shootout"}
+              </h4>
+              
+              <div className="flex items-center justify-center gap-6 mb-8 bg-[#D9D9D9] py-4 border-y-4 border-[#00183F]">
+                 <span className={`text-4xl md:text-5xl font-black ${roundData.userAdvanced ? "text-emerald-600" : "text-[#00183F]"}`}>{userPenScore}</span>
+                 <span className="text-gray-500 font-black text-xl md:text-2xl">X</span>
+                 <span className={`text-4xl md:text-5xl font-black ${!roundData.userAdvanced ? "text-rose-600" : "text-[#00183F]"}`}>{oppPenScore}</span>
+              </div>
+
+              <div className="flex flex-col sm:flex-row justify-between gap-8 sm:gap-4 text-xs md:text-sm font-bold uppercase tracking-wide">
+                
+                {/* Cobradores do seu time */}
+                <div className="flex-1 flex flex-col items-start gap-3">
+                  <span className="text-[#0033A0] font-black border-b-2 border-[#0033A0] pb-1 mb-1 truncate max-w-[150px]">
+                    {userTeamName}
+                  </span>
+                  {userPenalties.map((pen, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-sm md:text-base">
+                        {pen.scored ? "✅" : "❌"}
+                      </span>
+                      <span className={pen.scored ? "text-[#00183F]" : "text-gray-400 line-through"}>
+                        {pen.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Cobradores do Adversário */}
+                <div className="flex-1 flex flex-col items-start sm:items-end gap-3">
+                  <span className="text-rose-700 font-black border-b-2 border-rose-700 pb-1 mb-1 truncate max-w-[150px]">
+                    {roundData.userOpponent}
+                  </span>
+                  {oppPenalties.map((pen, i) => (
+                    <div key={i} className="flex items-center gap-2 sm:flex-row-reverse">
+                      <span className="text-sm md:text-base">
+                        {pen.scored ? "✅" : "❌"}
+                      </span>
+                      <span className={pen.scored ? "text-[#00183F]" : "text-gray-400 line-through"}>
+                        {pen.name}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+              </div>
+              
+              {/* Badge do Vencedor */}
+              <div className="mt-8 bg-[#00183F] p-3 text-center font-black text-white uppercase tracking-widest border-2 border-white shadow-[4px_4px_0_0_#D9D9D9]">
+                {lang === "pt" ? "Vencedor nos Pênaltis:" : "Shootout Winner:"} <span className={roundData.userAdvanced ? "text-emerald-400" : "text-rose-400"}>{roundData.userAdvanced ? userTeamName : roundData.userOpponent}</span>
+              </div>
             </div>
           )}
+
         </motion.div>
       )}
 
