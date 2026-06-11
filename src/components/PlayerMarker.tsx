@@ -21,28 +21,26 @@ export default function PlayerMarker({
   const { lang } = useLanguage();
 
   return (
-    <motion.div
-      layout
-      className="absolute"
+    <div
+      className="absolute z-10"
       style={{
         left: `${slot.x}%`,
         top: `${slot.y}%`,
-        x: "-50%",
-        y: "-50%",
-        zIndex: 10,
+        transform: "translate(-50%, -50%)",
+        transition: "left 0.4s ease, top 0.4s ease",
       }}
-      initial={{ scale: 0, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 0.4, type: "spring", stiffness: 200 }}
     >
       <motion.div
         onClick={onClick}
         whileHover={onClick && !hasPlayer ? { scale: 1.1 } : hasPlayer ? { scale: 1.05 } : {}}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.3, type: "spring", stiffness: 200 }}
         className={`
           relative flex flex-col justify-between
           w-[46px] h-[60px] sm:w-[54px] sm:h-[68px] md:w-[72px] md:h-[85px] 
           border-2 border-[#00183F] text-center
-          transition-all duration-200 rounded-none overflow-hidden
+          transition-colors duration-200 rounded-none overflow-hidden
           shadow-[2px_2px_0_0_rgba(0,0,0,0.5)] md:shadow-[4px_4px_0_0_rgba(0,0,0,0.5)]
           ${
             hasPlayer
@@ -58,7 +56,7 @@ export default function PlayerMarker({
           {POSITION_LABELS_MAP[lang][slot.position]}
         </div>
 
-        {/* Informações centrais com escala responsiva de texto */}
+        {/* Informações centrais */}
         <div className="flex-1 flex flex-col items-center justify-center p-0.5 w-full">
           {hasPlayer ? (
             <>
@@ -68,6 +66,9 @@ export default function PlayerMarker({
               <span className="text-[6px] sm:text-[7px] md:text-[9px] font-bold mt-0.5 md:mt-1 truncate w-full px-0.5">
                 {slot.player!.name.split(" ").slice(-1)[0]}
               </span>
+              <span className="text-[6px] sm:text-[8px] leading-none mt-0.5">
+                {slot.player!.nationality}
+              </span>
             </>
           ) : (
             <span className="text-[10px] md:text-[12px] font-black opacity-60">
@@ -76,6 +77,6 @@ export default function PlayerMarker({
           )}
         </div>
       </motion.div>
-    </motion.div>
+    </div>
   );
 }

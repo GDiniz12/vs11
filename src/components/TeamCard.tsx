@@ -3,7 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { TeamData, FormationSlot, Player } from "@/types";
-import { canPlayerFillAnyRemaining } from "@/utils/helpers";
+import { getAvailablePositions } from "@/utils/helpers"; 
 import { clubLogos } from "@/data/data";
 import PlayerRow from "./PlayerRow";
 import Card from "./ui/Card";
@@ -13,7 +13,7 @@ interface TeamCardProps {
   slots: FormationSlot[];
   onPlayerSelect: (player: Player) => void;
   selectedPlayer?: Player | null;
-  hideOverall?: boolean; // Nova propriedade
+  hideOverall?: boolean;
 }
 
 export default function TeamCard({
@@ -59,10 +59,9 @@ export default function TeamCard({
           {team.players.map((player, idx) => {
             const isAlreadyDrafted = slots.some((s) => s.player?.name === player.name);
             
-            const disabled = isAlreadyDrafted || !canPlayerFillAnyRemaining(
-              player.positions,
-              slots
-            );
+            // Usamos a função atualizada para checar se o jogador ainda cabe no time
+            const availablePosIds = getAvailablePositions(slots, player.positions);
+            const disabled = isAlreadyDrafted || availablePosIds.length === 0;
             
             const isSelected = selectedPlayer?.name === player.name && selectedPlayer?.teamKey === player.teamKey;
             
@@ -73,7 +72,7 @@ export default function TeamCard({
                 disabled={disabled}
                 onClick={() => onPlayerSelect(player)}
                 isSelected={isSelected}
-                hideOverall={hideOverall} // Repassando a regra do hardcore
+                hideOverall={hideOverall} 
               />
             );
           })}

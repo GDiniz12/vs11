@@ -1,8 +1,5 @@
 import { Player } from "@/types";
 
-/**
- * Generates a Poisson-distributed random number.
- */
 export function poissonRandom(lambda: number): number {
   const L = Math.exp(-lambda);
   let k = 0;
@@ -14,67 +11,64 @@ export function poissonRandom(lambda: number): number {
   return k - 1;
 }
 
-/**
- * Simulates a match between two teams.
- * Returns realistic goal counts based on team strengths.
- *
- * @param homeStrength - Average overall of home team (e.g., 85)
- * @param awayStrength - Average overall of away team
- */
 export function simulateMatch(
   homeStrength: number,
-  awayStrength: number
+  awayStrength: number,
+  homeTactic: "defensive" | "balanced" | "offensive" = "balanced",
+  awayTactic: "defensive" | "balanced" | "offensive" = "balanced",
+  homeIsUser: boolean = false,
+  awayIsUser: boolean = false,
+  difficulty: "easy" | "medium" | "impossible" = "medium",
+  homeChemistry: number = 100, // NOVO PARÂMETRO
+  awayChemistry: number = 100  // NOVO PARÂMETRO
 ): { homeGoals: number; awayGoals: number } {
-  // Base expected goals per team
   const BASE_GOALS = 1.25;
   const HOME_ADVANTAGE = 0.2;
 
-  // Strength difference normalized (range roughly -15 to +15 overall points)
-  const diff = homeStrength - awayStrength;
+  // Modificador de Entrosamento: Química 100 = +5 de OVR. Química 0 = -5 de OVR.
+  const hChemMod = (homeChemistry - 50) / 10;
+  const aChemMod = (awayChemistry - 50) / 10;
 
-  // Each point of overall difference adjusts expected goals by ~0.04
-  const homeExpected = Math.max(
-    0.3,
-    BASE_GOALS + HOME_ADVANTAGE + diff * 0.04
-  );
-  const awayExpected = Math.max(
-    0.3,
-    BASE_GOALS - diff * 0.04
-  );
+  let hStr = homeStrength + hChemMod;
+  let aStr = awayStrength + aChemMod;
+
+  if (homeIsUser) {
+    if (difficulty === "easy") hStr += 5;
+    if (difficulty === "impossible") hStr -= 8;
+  }
+  if (awayIsUser) {
+    if (difficulty === "easy") aStr += 5;
+    if (difficulty === "impossible") aStr -= 8;
+  }
+
+  const diff = hStr - aStr;
+  let homeExpected = Math.max(0.1, BASE_GOALS + HOME_ADVANTAGE + diff * 0.082);
+  let awayExpected = Math.max(0.1, BASE_GOALS - diff * 0.082);
+
+  const applyTactic = (teamTactic: string, isHome: boolean) => {
+    if (teamTactic === "offensive") {
+      if (isHome) { homeExpected *= 1.35; awayExpected *= 1.25; }
+      else { awayExpected *= 1.35; homeExpected *= 1.25; }
+    } else if (teamTactic === "defensive") {
+      if (isHome) { homeExpected *= 0.65; awayExpected *= 0.65; }
+      else { awayExpected *= 0.65; homeExpected *= 0.65; }
+    }
+  };
+
+  applyTactic(homeTactic, true);
+  applyTactic(awayTactic, false);
 
   let homeGoals = poissonRandom(homeExpected);
   let awayGoals = poissonRandom(awayExpected);
 
-  // Clamp to reasonable range (0-7)
-  homeGoals = Math.min(homeGoals, 7);
-  awayGoals = Math.min(awayGoals, 7);
+  homeGoals = Math.min(homeGoals, 9);
+  awayGoals = Math.min(awayGoals, 9);
 
   return { homeGoals, awayGoals };
 }
 
-/**
- * Calculates the average overall rating of a squad.
- */
 export function calculateTeamStrength(players: Player[]): number {
   if (players.length === 0) return 80;
   const total = players.reduce((sum, p) => sum + p.overall, 0);
   return total / players.length;
-}
-
-/**
- * Simulates a match and returns a full result object.
- */
-export function simulateMatchResult(
-  homeTeam: string,
-  awayTeam: string,
-  homeStrength: number,
-  awayStrength: number
-) {
-  const { homeGoals, awayGoals } = simulateMatch(homeStrength, awayStrength);
-  return {
-    homeTeam,
-    awayTeam,
-    homeGoals,
-    awayGoals,
-  };
 }

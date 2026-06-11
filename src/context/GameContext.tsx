@@ -1,43 +1,26 @@
 'use client';
 
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  ReactNode,
-} from 'react';
-import {
-  FormationType,
-  FormationSlot,
-  Player,
-  TeamData,
-  GamePhase,
-  LeagueTeam,
-  MatchResult,
-  KnockoutRound,
-  GameStats,
-  GameMode,
-} from '@/types';
+import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { FormationType, FormationSlot, Player, TeamData, GamePhase, LeagueTeam, MatchResult, KnockoutRound, GameStats, GameMode, TacticType, DifficultyType, Manager } from '@/types';
 import { useLanguage } from '@/context/LanguageContext';
 import { TRANSLATIONS } from '@/lib/constants';
 import { getFormationSlots } from '@/utils/formations';
-import { getRandomTeam, getAllTeams, shuffleArray } from '@/utils/helpers';
+import { getRandomTeam, getAllTeams, shuffleArray, calculateTeamChemistry } from '@/utils/helpers';
 import { calculateTeamStrength } from '@/utils/simulation';
-import {
-  generateLeaguePhase,
-  checkQualification,
-  generateKnockoutRounds,
-} from '@/utils/tournament';
-import { americans, europeans } from '@/data/data';
+import { generateLeaguePhase, generateKnockoutRounds } from '@/utils/tournament';
+import { americans, europeans, managersData } from '@/data/data';
 
 interface GameState {
   phase: GamePhase;
   formation: FormationType | null;
   gameMode: GameMode;
+  tactic: TacticType;
+  difficulty: DifficultyType;
   slots: FormationSlot[];
   draftRound: number;
   currentDraftTeam: TeamData | null;
+  currentDraftManagers: Manager[];
+  manager: Manager | null;
   leagueTable: LeagueTeam[];
   userMatches: MatchResult[];
   knockoutRounds: KnockoutRound[];
@@ -49,7 +32,10 @@ interface GameState {
 interface GameContextType extends GameState {
   setFormation: (f: FormationType) => void;
   setGameMode: (m: GameMode) => void;
+  setTactic: (t: TacticType) => void;
+  setDifficulty: (d: DifficultyType) => void;
   assignPlayerToSlot: (player: Player, slotId: number) => void;
+  assignManager: (manager: Manager) => void;
   drawNextTeam: () => void;
   startLeaguePhase: () => void;
   startKnockoutPhase: () => void;
@@ -57,21 +43,19 @@ interface GameContextType extends GameState {
   resetGame: () => void;
 }
 
-const initialStats: GameStats = {
-  wins: 0,
-  losses: 0,
-  draws: 0,
-  goalsScored: 0,
-  goalsConceded: 0,
-};
+const initialStats: GameStats = { wins: 0, losses: 0, draws: 0, goalsScored: 0, goalsConceded: 0 };
 
 const initialState: GameState = {
   phase: 'home',
   formation: null,
-  gameMode: 'classic', // Default é clássico
+  gameMode: 'classic',
+  tactic: 'balanced',
+  difficulty: 'medium',
   slots: [],
   draftRound: 0,
   currentDraftTeam: null,
+  currentDraftManagers: [],
+  manager: null,
   leagueTable: [],
   userMatches: [],
   knockoutRounds: [],
@@ -86,77 +70,59 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const { lang } = useLanguage();
   const [state, setState] = useState<GameState>({ ...initialState, userTeamName: TRANSLATIONS[lang].your_team });
 
-  const setFormation = useCallback((f: FormationType) => {
-    setState((prev) => ({
-      ...prev,
-      formation: f,
-      slots: getFormationSlots(f),
-    }));
-  }, []);
-
-  const setGameMode = useCallback((m: GameMode) => {
-    setState((prev) => ({
-      ...prev,
-      gameMode: m,
-    }));
-  }, []);
-
+  const setFormation = useCallback((f: FormationType) => setState((prev) => ({ ...prev, formation: f, slots: getFormationSlots(f) })), []);
+  const setGameMode = useCallback((m: GameMode) => setState((prev) => ({ ...prev, gameMode: m })), []);
+  const setTactic = useCallback((t: TacticType) => setState((prev) => ({ ...prev, tactic: t })), []);
+  const setDifficulty = useCallback((d: DifficultyType) => setState((prev) => ({ ...prev, difficulty: d })), []);
+  
   const drawNextTeam = useCallback(() => {
-    const team = getRandomTeam(americans, europeans);
-    setState((prev) => ({ ...prev, currentDraftTeam: team }));
+    setState((prev) => {
+      if (prev.draftRound < 11) {
+        return { ...prev, currentDraftTeam: getRandomTeam(americans, europeans) };
+      } else if (prev.draftRound === 11) {
+        return { ...prev, currentDraftManagers: shuffleArray(managersData).slice(0, 5), currentDraftTeam: null };
+      }
+      return prev;
+    });
   }, []);
 
-  const assignPlayerToSlot = useCallback(
-    (player: Player, slotId: number) => {
-      setState((prev) => {
-        const newSlots = prev.slots.map((slot) =>
-          slot.id === slotId ? { ...slot, player } : slot
-        );
-        const newRound = prev.draftRound + 1;
+  const assignPlayerToSlot = useCallback((player: Player, slotId: number) => {
+    setState((prev) => {
+      const newSlots = prev.slots.map((slot) => slot.id === slotId ? { ...slot, player } : slot);
+      const newRound = prev.draftRound + 1;
+      let nextTeam: TeamData | null = null;
+      let nextManagers: Manager[] = [];
+      
+      if (newRound < 11) {
+        nextTeam = getRandomTeam(americans, europeans);
+      } else if (newRound === 11) {
+        nextManagers = shuffleArray(managersData).slice(0, 5);
+      }
+      
+      return { ...prev, slots: newSlots, draftRound: newRound, currentDraftTeam: nextTeam, currentDraftManagers: nextManagers };
+    });
+  }, []);
 
-        let nextTeam: TeamData | null = null;
-        if (newRound < 11) {
-          nextTeam = getRandomTeam(americans, europeans);
-        }
-
-        return {
-          ...prev,
-          slots: newSlots,
-          draftRound: newRound,
-          currentDraftTeam: nextTeam,
-        };
-      });
-    },
-    []
-  );
+  const assignManager = useCallback((manager: Manager) => {
+    setState((prev) => {
+      return { ...prev, manager, draftRound: prev.draftRound + 1, currentDraftManagers: [] };
+    });
+  }, []);
 
   const startLeaguePhase = useCallback(() => {
     setState((prev) => {
-      const userPlayers = prev.slots
-        .filter((s) => s.player)
-        .map((s) => s.player!);
+      const userPlayers = prev.slots.filter((s) => s.player).map((s) => s.player!);
       const userStrength = calculateTeamStrength(userPlayers);
       const userTeamName = TRANSLATIONS[lang].your_team;
+      const userChemistry = calculateTeamChemistry(prev.slots, prev.formation, prev.manager);
 
       const allDataTeams = getAllTeams(americans, europeans);
-      const teamEntries = allDataTeams.map((t) => ({
-        name: t.name,
-        strength:
-          t.players.reduce((sum, p) => sum + p.overall, 0) /
-          t.players.length,
-      }));
+      const teamEntries = allDataTeams.map((t) => ({ name: t.name, strength: t.players.reduce((sum, p) => sum + p.overall, 0) / t.players.length }));
 
       const shuffled = shuffleArray(teamEntries).slice(0, 35);
-      const allTeams = [
-        { name: userTeamName, strength: userStrength },
-        ...shuffled,
-      ];
+      const allTeams = [{ name: userTeamName, strength: userStrength }, ...shuffled];
 
-      const { userMatches, table } = generateLeaguePhase(
-        userTeamName,
-        userStrength,
-        allTeams
-      );
+      const { userMatches, table } = generateLeaguePhase(userTeamName, userStrength, allTeams, prev.tactic, prev.difficulty, userChemistry);
 
       const stats: GameStats = { ...initialStats };
       userMatches.forEach((m) => {
@@ -170,89 +136,47 @@ export function GameProvider({ children }: { children: ReactNode }) {
         else stats.draws++;
       });
 
-      return {
-        ...prev,
-        phase: 'league' as GamePhase,
-        leagueTable: table,
-        userMatches,
-        stats,
-        userTeamName,
-      };
+      return { ...prev, phase: 'league' as GamePhase, leagueTable: table, userMatches, stats, userTeamName };
     });
   }, [lang]);
 
   const startKnockoutPhase = useCallback(() => {
     setState((prev) => {
-      const userPlayers = prev.slots
-        .filter((s) => s.player)
-        .map((s) => s.player!);
+      const userPlayers = prev.slots.filter((s) => s.player).map((s) => s.player!);
       const userStrength = calculateTeamStrength(userPlayers);
+      const userChemistry = calculateTeamChemistry(prev.slots, prev.formation, prev.manager);
 
-      const rounds = generateKnockoutRounds(
-        prev.leagueTable,
-        prev.userTeamName,
-        userStrength
-      );
+      const rounds = generateKnockoutRounds(prev.leagueTable, prev.userTeamName, userStrength, prev.tactic, prev.difficulty, userChemistry);
 
       const newStats = { ...prev.stats };
       rounds.forEach((r) => {
         const isHomeLeg1 = r.leg1.homeTeam === prev.userTeamName;
         const ug1 = isHomeLeg1 ? r.leg1.homeGoals : r.leg1.awayGoals;
         const og1 = isHomeLeg1 ? r.leg1.awayGoals : r.leg1.homeGoals;
-        newStats.goalsScored += ug1;
-        newStats.goalsConceded += og1;
-        if (ug1 > og1) newStats.wins++;
-        else if (ug1 < og1) newStats.losses++;
-        else newStats.draws++;
+        newStats.goalsScored += ug1; newStats.goalsConceded += og1;
+        if (ug1 > og1) newStats.wins++; else if (ug1 < og1) newStats.losses++; else newStats.draws++;
 
         if (r.leg2) {
           const isHomeLeg2 = r.leg2.homeTeam === prev.userTeamName;
           const ug2 = isHomeLeg2 ? r.leg2.homeGoals : r.leg2.awayGoals;
           const og2 = isHomeLeg2 ? r.leg2.awayGoals : r.leg2.homeGoals;
-          newStats.goalsScored += ug2;
-          newStats.goalsConceded += og2;
-          if (ug2 > og2) newStats.wins++;
-          else if (ug2 < og2) newStats.losses++;
-          else newStats.draws++;
+          newStats.goalsScored += ug2; newStats.goalsConceded += og2;
+          if (ug2 > og2) newStats.wins++; else if (ug2 < og2) newStats.losses++; else newStats.draws++;
         }
       });
 
       const lastRound = rounds[rounds.length - 1];
-      const isChampion =
-        lastRound?.round === 'Final' && lastRound?.userAdvanced;
+      const isChampion = lastRound?.round === 'Final' && lastRound?.userAdvanced;
 
-      return {
-        ...prev,
-        phase: 'knockout' as GamePhase,
-        knockoutRounds: rounds,
-        stats: newStats,
-        isChampion,
-      };
+      return { ...prev, phase: 'knockout' as GamePhase, knockoutRounds: rounds, stats: newStats, isChampion };
     });
   }, []);
 
-  const setPhase = useCallback((p: GamePhase) => {
-    setState((prev) => ({ ...prev, phase: p }));
-  }, []);
-
-  const resetGame = useCallback(() => {
-    setState({ ...initialState, userTeamName: TRANSLATIONS[lang].your_team });
-  }, [lang]);
+  const setPhase = useCallback((p: GamePhase) => setState((prev) => ({ ...prev, phase: p })), []);
+  const resetGame = useCallback(() => setState({ ...initialState, userTeamName: TRANSLATIONS[lang].your_team }), [lang]);
 
   return (
-    <GameContext.Provider
-      value={{
-        ...state,
-        setFormation,
-        setGameMode,
-        assignPlayerToSlot,
-        drawNextTeam,
-        startLeaguePhase,
-        startKnockoutPhase,
-        setPhase,
-        resetGame,
-      }}
-    >
+    <GameContext.Provider value={{ ...state, setFormation, setGameMode, setTactic, setDifficulty, assignPlayerToSlot, assignManager, drawNextTeam, startLeaguePhase, startKnockoutPhase, setPhase, resetGame }}>
       {children}
     </GameContext.Provider>
   );
@@ -260,7 +184,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
 export function useGame(): GameContextType {
   const ctx = useContext(GameContext);
-  if (!ctx)
-    throw new Error('useGame must be used within a GameProvider');
+  if (!ctx) throw new Error('useGame must be used within a GameProvider');
   return ctx;
 }
