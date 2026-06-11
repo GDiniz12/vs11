@@ -11,7 +11,6 @@ export function getAllTeams(americans: any, europeans: any): TeamData[] {
     Object.keys(data).forEach(key => {
       teams.push({
         key,
-        // Removido o corte (slice) para que o ano permaneça no nome do time!
         name: key.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
         continent,
         players: data[key].map((p: any) => ({
@@ -44,41 +43,40 @@ export function shuffleArray<T>(array: T[]): T[] {
   return arr;
 }
 
-// LÓGICA DE ENTROSAMENTO (CHEMISTRY)
+// LÓGICA DE ENTROSAMENTO (CHEMISTRY) - AINDA MAIS GENEROSA
 export function getLinkChemistry(p1?: Player, p2?: Player): number {
-  if (!p1 || !p2) return 0;
+  if (!p1 || !p2) return 0; 
   
   const exactTeam = p1.teamKey === p2.teamKey;
   const baseTeam1 = p1.teamKey.split('-').slice(0, -1).join('-');
   const baseTeam2 = p2.teamKey.split('-').slice(0, -1).join('-');
   const sameBaseTeam = baseTeam1 === baseTeam2;
-  const year1 = p1.teamKey.split('-').pop();
-  const year2 = p2.teamKey.split('-').pop();
-  const sameYear = year1 === year2;
   const sameCountry = p1.nationality === p2.nationality;
 
-  if (exactTeam && sameCountry) return 100; // Verde: Mesma carta exata e mesmo país
-  if (exactTeam && !sameCountry) return 75; // Amarelo: Mesmo time exato, países diferentes
-  if (!sameBaseTeam && sameCountry && !sameYear) return 30; // Vermelho: Times diferentes, anos dif, mesmo país
-  if (sameBaseTeam && !sameYear && !sameCountry) return 10; // Laranja: Mesmo time, anos diferentes, países dif
-  if (sameCountry) return 50; // Azul: Catch-all para mesmo país
+  if (exactTeam && sameCountry) return 100; // Verde: Mesma carta e país
+  if (exactTeam && !sameCountry) return 90; // Amarelo: Mesma carta, país dif
+  if (sameBaseTeam && sameCountry) return 85; // Laranja: Histórico de clube + país igual
+  if (sameCountry) return 75; // Azul: Mesmo país
+  if (sameBaseTeam) return 65; // Vermelho: Histórico de clube, países dif
 
-  return 0; // Vazio: Zero ligações
+  // Bônus base grandão: Se os jogadores não tiverem nenhuma ligação, ganham 40!
+  return 40; 
 }
 
 export function getLinkColor(chem: number): string {
-  if (chem === 100) return "#22c55e"; 
-  if (chem === 75) return "#eab308"; 
-  if (chem === 50) return "#3b82f6"; 
-  if (chem === 30) return "#ef4444"; 
-  if (chem === 10) return "#f97316"; 
-  return "rgba(255, 255, 255, 0.2)"; 
+  if (chem >= 100) return "#22c55e"; // Verde
+  if (chem >= 90) return "#eab308";  // Amarelo
+  if (chem >= 85) return "#f97316";  // Laranja
+  if (chem >= 75) return "#3b82f6";  // Azul
+  if (chem >= 65) return "#ef4444";  // Vermelho
+  if (chem > 0) return "rgba(255, 255, 255, 0.4)"; // Branco fraco para a ligação básica de 40
+  return "rgba(255, 255, 255, 0.1)"; // Transparente/tracejado se estiver vazio
 }
 
 export function calculateTeamChemistry(slots: FormationSlot[], formation: FormationType | null): number {
   if (!formation) return 0;
   const links = FORMATION_LINKS[formation];
-  if (!links) return 0;
+  if (!links || links.length === 0) return 0;
   
   let total = 0;
   links.forEach(([id1, id2]) => {
@@ -87,5 +85,5 @@ export function calculateTeamChemistry(slots: FormationSlot[], formation: Format
     total += getLinkChemistry(p1, p2);
   });
   
-  return Math.min(Math.floor(total / 11), 100);
+  return Math.min(Math.floor(total / links.length), 100);
 }
