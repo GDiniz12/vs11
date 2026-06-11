@@ -4,8 +4,11 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGame } from "@/context/GameContext";
+import { useSocket } from "@/context/SocketContext"; 
 import { Player, FormationSlot, TeamData } from "@/types";
-import { getAvailablePositions, getAllTeams, getCountryEmoji } from "@/utils/helpers";
+import { getAvailablePositions, getAllTeams, getCountryEmoji, calculateTeamChemistry } from "@/utils/helpers";
+import { calculateTeamStrength } from "@/utils/simulation";
+import { generateOnlineGuerra, generateOnlineTradicional } from "@/utils/tournament";
 import { americans, europeans } from "@/data/data";
 import FootballPitch from "@/components/FootballPitch";
 import TeamCard from "@/components/TeamCard";
@@ -17,17 +20,12 @@ import { TRANSLATIONS } from "@/lib/constants";
 
 export default function DraftPage() {
   const router = useRouter();
+  const { socket, currentRoom, nickname } = useSocket(); 
+  
   const {
-    draftRound,
-    currentDraftTeam,
-    currentDraftManagers,
-    manager,
-    assignManager,
-    slots,
-    formation,
-    assignPlayerToSlot,
-    drawNextTeam,
-    gameMode,
+    draftRound, currentDraftTeam, currentDraftManagers, manager,
+    assignManager, slots, formation, assignPlayerToSlot, drawNextTeam, gameMode,
+    tactic, setOnlineTournamentState
   } = useGame();
 
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
@@ -43,6 +41,9 @@ export default function DraftPage() {
 
   const isManagerDraft = draftRound === 11;
   const isDraftComplete = draftRound >= 12;
+
+  const [onlineProgress, setOnlineProgress] = useState({ finishedCount: 1, totalPlayers: 1 });
+  const [hasEmittedComplete, setHasEmittedComplete] = useState(false);
 
   useEffect(() => {
     if (draftRound === 0) setRerollsLeft(maxRerolls);
@@ -69,6 +70,62 @@ export default function DraftPage() {
     }
   }, [currentDraftTeam, allTeams, isManagerDraft]);
 
+  // EMITE que terminou
+  useEffect(() => {
+    if (isDraftComplete && currentRoom && !hasEmittedComplete) {
+      const userPlayers = slots.filter((s) => s.player).map((s) => s.player!);
+      const strength = calculateTeamStrength(userPlayers);
+      const chemistry = calculateTeamChemistry(slots, formation, manager);
+      
+      socket?.emit("playerDraftComplete", currentRoom.id, {
+        nickname,
+        strength,
+        chemistry,
+        tactic,
+      });
+      setHasEmittedComplete(true);
+    }
+  }, [isDraftComplete, currentRoom, hasEmittedComplete, slots, formation, manager, nickname, tactic, socket]);
+
+  // ESCUTA as simulações e resultados
+  useEffect(() => {
+    if (!currentRoom) return;
+
+    const onDraftProgress = (data: any) => setOnlineProgress(data);
+    
+    // Apenas o Host receberá esse sinal!
+    const onHostStartSimulation = (playersData: any[]) => {
+      if (currentRoom.mode === 'guerra') {
+        const data = generateOnlineGuerra(playersData);
+        socket?.emit("onlineTournamentData", currentRoom.id, { mode: 'guerra', ...data });
+      } else {
+        const data = generateOnlineTradicional(playersData, allTeams, currentRoom.difficulty || 'medium');
+        socket?.emit("onlineTournamentData", currentRoom.id, { mode: 'tradicional', ...data });
+      }
+    };
+
+    const onOnlineTournamentReady = (data: any) => {
+      setOnlineTournamentState(data, nickname);
+      if (data.mode === 'guerra') {
+        router.push("/knockout");
+      } else {
+        router.push("/tournament");
+      }
+    };
+
+    socket?.on("draftProgress", onDraftProgress);
+    socket?.on("hostStartSimulation", onHostStartSimulation);
+    socket?.on("onlineTournamentReady", onOnlineTournamentReady);
+
+    return () => {
+      socket?.off("draftProgress", onDraftProgress);
+      socket?.off("hostStartSimulation", onHostStartSimulation);
+      socket?.off("onlineTournamentReady", onOnlineTournamentReady);
+    }
+  }, [currentRoom, socket, router, nickname, setOnlineTournamentState, allTeams]);
+
+
+  // [TODO O RESTANTE DO CÓDIGO PERMANECE IDENTICO]
   const hasSelectablePlayers = currentDraftTeam?.players.some(
     (p) => {
       const isAlreadyDrafted = slots.some((s) => s.player?.name === p.name);
@@ -143,6 +200,9 @@ export default function DraftPage() {
             {gameMode === "hardcore" && (
               <span className="bg-rose-600 text-white text-xs px-2 py-1 border-2 border-[#00183F]">HARDCORE</span>
             )}
+            {currentRoom && (
+              <span className="bg-emerald-500 text-[#00183F] text-xs px-2 py-1 border-2 border-[#00183F]">ONLINE</span>
+            )}
           </h1>
           
           <div className="flex items-center gap-2">
@@ -179,16 +239,33 @@ export default function DraftPage() {
               <h2 className="text-3xl md:text-4xl font-black text-[#00183F] mb-2 uppercase tracking-tighter">
                 {TRANSLATIONS[lang].squad_complete}
               </h2>
-              <p className="text-gray-500 font-bold uppercase tracking-widest mb-10 text-sm md:text-base">
-                {tDraft.ready}
-              </p>
 
-              <button
-                onClick={() => router.push("/tournament")}
-                className="w-full px-8 py-5 bg-[#D9D9D9] text-[#00183F] border-4 border-[#00183F] font-black text-2xl uppercase tracking-widest transition-all duration-75 shadow-[6px_6px_0_0_#0033A0] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[10px_10px_0_0_#0033A0] active:translate-y-2 active:translate-x-2 active:shadow-none"
-              >
-                {tDraft.simulateBtn}
-              </button>
+              {currentRoom ? (
+                <div className="mt-6 flex flex-col items-center">
+                  <p className="text-xl font-bold uppercase text-amber-600 mb-2">Aguardando outros jogadores...</p>
+                  <div className="text-4xl font-black text-[#00183F]">
+                    {onlineProgress.finishedCount} / {onlineProgress.totalPlayers}
+                  </div>
+                  <div className="w-full bg-gray-200 h-4 border-2 border-[#00183F] mt-4">
+                    <div 
+                      className="bg-[#0033A0] h-full transition-all duration-300" 
+                      style={{ width: `${(onlineProgress.finishedCount / onlineProgress.totalPlayers) * 100}%` }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-gray-500 font-bold uppercase tracking-widest mb-10 text-sm md:text-base">
+                    {tDraft.ready}
+                  </p>
+                  <button
+                    onClick={() => router.push("/tournament")}
+                    className="w-full px-8 py-5 bg-[#D9D9D9] text-[#00183F] border-4 border-[#00183F] font-black text-2xl uppercase tracking-widest transition-all duration-75 shadow-[6px_6px_0_0_#0033A0] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[10px_10px_0_0_#0033A0] active:translate-y-2 active:translate-x-2 active:shadow-none"
+                  >
+                    {tDraft.simulateBtn}
+                  </button>
+                </>
+              )}
             </motion.div>
           ) : isManagerDraft ? (
             <>

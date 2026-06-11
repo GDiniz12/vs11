@@ -4,6 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGame } from "@/context/GameContext";
+import { useSocket } from "@/context/SocketContext"; // <--- NOVO
 import { checkQualification } from "@/utils/tournament";
 import LeagueTable from "@/components/LeagueTable";
 import MatchResultCard from "@/components/MatchResultCard";
@@ -15,6 +16,7 @@ import { TRANSLATIONS } from "@/lib/constants";
 export default function TournamentPage() {
   const router = useRouter();
   const { lang } = useLanguage();
+  const { currentRoom } = useSocket(); // <--- NOVO
   const {
     leagueTable,
     userMatches,
@@ -28,12 +30,12 @@ export default function TournamentPage() {
   const matchesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (leagueTable.length === 0) {
+    // Se o jogo NÃO for online e a tabela não tiver carregado, simula localmente!
+    if (leagueTable.length === 0 && !currentRoom) {
       startLeaguePhase();
     }
-  }, [leagueTable.length, startLeaguePhase]);
+  }, [leagueTable.length, startLeaguePhase, currentRoom]);
 
-  // Efeito responsável pelo delay de 3 segundos na exibição de cada confronto da liga
   useEffect(() => {
     if (userMatches.length === 0) return;
     
@@ -66,7 +68,7 @@ export default function TournamentPage() {
 
   const handleContinue = () => {
     if (qualified) {
-      startKnockoutPhase();
+      if (!currentRoom) startKnockoutPhase(); // Mata-mata já vem preenchido do backend se for Online!
       router.push("/knockout");
     } else {
       setPhase("result");
@@ -81,7 +83,6 @@ export default function TournamentPage() {
       <div className="max-w-5xl mx-auto">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           
-          {/* Header Brutalista */}
           <div className="text-center mb-10 border-4 border-white bg-[#D9D9D9] p-6 shadow-[8px_8px_0_0_#0033A0]">
             <h1 className="text-4xl md:text-6xl font-black text-[#00183F] mb-2 uppercase tracking-tight">
               {title}
@@ -91,7 +92,6 @@ export default function TournamentPage() {
             </p>
           </div>
 
-          {/* Partidas do Usuário com Revelação em Cascata */}
           <div className="mb-10">
             <h2 className="text-2xl font-black text-white uppercase tracking-wider mb-4 border-l-8 border-amber-400 pl-4">
               {TRANSLATIONS[lang].your_matches}
@@ -117,14 +117,12 @@ export default function TournamentPage() {
             </div>
           </div>
 
-          {/* Elementos secundários revelados apenas ao fim das rodadas */}
           {showRemainingContent && (
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
             >
-              {/* Tabela de Classificação */}
               <div className="mb-10">
                 <h2 className="text-2xl font-black text-white uppercase tracking-wider mb-4 border-l-8 border-emerald-500 pl-4">
                   {TRANSLATIONS[lang].standings}
@@ -142,7 +140,6 @@ export default function TournamentPage() {
                 </div>
               </div>
 
-              {/* Status de Qualificação */}
               <Card className="text-center mb-8 border-4 border-white">
                 <div className="py-4">
                   {qualified ? (
@@ -171,7 +168,6 @@ export default function TournamentPage() {
                 </div>
               </Card>
 
-              {/* Botão de Direcionamento */}
               <div className="text-center mb-10">
                 <Button variant="primary" size="lg" onClick={handleContinue} className="w-full md:w-auto">
                   {qualified ? TRANSLATIONS[lang].continue_to_knockout : TRANSLATIONS[lang].view_results}

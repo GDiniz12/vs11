@@ -40,6 +40,7 @@ interface GameContextType extends GameState {
   startLeaguePhase: () => void;
   startKnockoutPhase: () => void;
   setPhase: (p: GamePhase) => void;
+  setOnlineTournamentState: (data: any, nickname: string) => void;
   resetGame: () => void;
 }
 
@@ -106,6 +107,72 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const assignManager = useCallback((manager: Manager) => {
     setState((prev) => {
       return { ...prev, manager, draftRound: prev.draftRound + 1, currentDraftManagers: [] };
+    });
+  }, []);
+
+  const setOnlineTournamentState = useCallback((data: any, nickname: string) => {
+    setState((prev) => {
+      const ko = data.knockoutRounds || [];
+      const newStats = { wins: 0, losses: 0, draws: 0, goalsScored: 0, goalsConceded: 0 };
+
+      // Contabiliza pontos na Liga Tradicional
+      const uMatches = data.mode === 'tradicional' ? (data.playerMatches[nickname] || []) : [];
+      uMatches.forEach((m: any) => {
+        const isHome = m.homeTeam === nickname;
+        const userGoals = isHome ? m.homeGoals : m.awayGoals;
+        const oppGoals = isHome ? m.awayGoals : m.homeGoals;
+        newStats.goalsScored += userGoals;
+        newStats.goalsConceded += oppGoals;
+        if (userGoals > oppGoals) newStats.wins++;
+        else if (userGoals < oppGoals) newStats.losses++;
+        else newStats.draws++;
+      });
+
+      // Contabiliza o Mata-Mata filtrando as partidas do jogador
+      const koWithUserContext = ko.map((r: any) => {
+        const isLeg1Home = r.leg1.homeTeam === nickname;
+        const isLeg1Away = r.leg1.awayTeam === nickname;
+        let myOpponent = r.userOpponent;
+
+        // Verifica se a partida envolvia esse jogador específico
+        if (isLeg1Home || isLeg1Away) {
+          myOpponent = isLeg1Home ? r.leg1.awayTeam : r.leg1.homeTeam;
+
+          // Soma os placares da Ida
+          const ug1 = isLeg1Home ? r.leg1.homeGoals : r.leg1.awayGoals;
+          const og1 = isLeg1Home ? r.leg1.awayGoals : r.leg1.homeGoals;
+          newStats.goalsScored += ug1; newStats.goalsConceded += og1;
+          if (ug1 > og1) newStats.wins++; else if (ug1 < og1) newStats.losses++; else newStats.draws++;
+
+          // Soma os placares da Volta (Se existir)
+          if (r.leg2) {
+            const isLeg2Home = r.leg2.homeTeam === nickname;
+            const ug2 = isLeg2Home ? r.leg2.homeGoals : r.leg2.awayGoals;
+            const og2 = isLeg2Home ? r.leg2.awayGoals : r.leg2.homeGoals;
+            newStats.goalsScored += ug2; newStats.goalsConceded += og2;
+            if (ug2 > og2) newStats.wins++; else if (ug2 < og2) newStats.losses++; else newStats.draws++;
+          }
+        }
+
+        return {
+          ...r,
+          userAdvanced: r.winner === nickname,
+          userOpponent: myOpponent
+        };
+      });
+
+      const isChampion = ko.length > 0 && ko[ko.length - 1].winner === nickname;
+
+      return {
+        ...prev,
+        phase: data.mode === 'guerra' ? 'knockout' : 'league',
+        leagueTable: data.mode === 'tradicional' ? data.table : [],
+        userMatches: uMatches,
+        knockoutRounds: koWithUserContext,
+        userTeamName: nickname,
+        isChampion,
+        stats: newStats // <- A mágica final para a página de resultados!
+      };
     });
   }, []);
 
@@ -176,7 +243,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const resetGame = useCallback(() => setState({ ...initialState, userTeamName: TRANSLATIONS[lang].your_team }), [lang]);
 
   return (
-    <GameContext.Provider value={{ ...state, setFormation, setGameMode, setTactic, setDifficulty, assignPlayerToSlot, assignManager, drawNextTeam, startLeaguePhase, startKnockoutPhase, setPhase, resetGame }}>
+    <GameContext.Provider value={{ ...state, setFormation, setGameMode, setTactic, setDifficulty, assignPlayerToSlot, assignManager, drawNextTeam, startLeaguePhase, startKnockoutPhase, setPhase, setOnlineTournamentState, resetGame }}>
       {children}
     </GameContext.Provider>
   );

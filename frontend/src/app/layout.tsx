@@ -3,7 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { GameProvider } from "@/context/GameContext";
-import SupportButton from "@/components/SupportButton"; // <-- 1. Importe o componente
+import SupportButton from "@/components/SupportButton";
+import { SocketProvider } from "@/context/SocketContext"; // <-- Importe o SocketProvider
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -20,12 +21,14 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={inter.className}>
-        <LanguageProvider>
-          <GameProvider>
-            {children}
-            <SupportButton /> {/* <-- 2. Adicione ele aqui! */}
-          </GameProvider>
-        </LanguageProvider>
+        <SocketProvider>
+          <LanguageProvider>
+            <GameProvider>
+              {children}
+              <SupportButton />
+            </GameProvider>
+          </LanguageProvider>
+        </SocketProvider>
       </body>
     </html>
   );

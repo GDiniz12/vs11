@@ -32,20 +32,21 @@ export default function HomePage() {
     },
   };
 
-  // Objeto local mapeando os dois idiomas suportados para a página principal
   const translations = {
     pt: {
       badge: "O Simulador Definitivo",
       subtitle: <>A Glória Eterna <br /> te aguarda.</>,
       description: <>Construa seu elenco dos sonhos draftando as maiores lendas da <span className="text-amber-400 font-bold"> Copa Libertadores</span> e da <span className="text-blue-400 font-bold"> Champions League</span>. Desafie os maiores times da história e conquiste o topo do mundo.</>,
-      button: "Jogar Agora",
+      button: "Jogar Offline",
+      buttonOnline: "Jogar Online",
       footer: "Exemplo de Elenco Supremo"
     },
     en: {
       badge: "The Ultimate Simulator",
       subtitle: <>Eternal Glory <br /> Awaits You.</>,
       description: <>Build your dream squad by drafting the greatest legends from the <span className="text-amber-400 font-bold"> Copa Libertadores</span> and the <span className="text-blue-400 font-bold"> Champions League</span>. Challenge history's biggest teams and conquer the top of the world.</>,
-      button: "Play Now",
+      button: "Play Offline",
+      buttonOnline: "Play Online",
       footer: "Supreme Squad Example"
     }
   };
@@ -55,10 +56,8 @@ export default function HomePage() {
   return (
     <div className="relative min-h-screen bg-[#00183F] flex flex-col lg:flex-row items-center justify-center p-6 lg:p-12 overflow-hidden gap-12 font-sans">
       
-      {/* O seletor foi embutido aqui, tornando-se exclusivo da página Home */}
       <LanguageSelector />
 
-      {/* LADO ESQUERDO: Textos e Botão */}
       <motion.div
         className="flex-1 w-full max-w-2xl flex flex-col items-start justify-center z-10 pt-12 lg:pt-0"
         initial={{ opacity: 0, x: -50 }}
@@ -83,25 +82,27 @@ export default function HomePage() {
           {t.description}
         </p>
 
-        <motion.button
-          onClick={() => router.push("/formation")}
-          className="mt-10 px-10 py-5 bg-[#D9D9D9] text-[#00183F] border-4 border-[#00183F] font-black text-2xl uppercase tracking-wider transition-all duration-75 shadow-[8px_8px_0_0_#0033A0]"
-          whileHover={{ 
-            translateY: -2, 
-            translateX: -2, 
-            boxShadow: "12px 12px 0 0 #0033A0" 
-          }}
-          whileTap={{ 
-            translateY: 8, 
-            translateX: 8, 
-            boxShadow: "0px 0px 0 0 #0033A0" 
-          }}
-        >
-          {t.button}
-        </motion.button>
+        <div className="flex flex-col sm:flex-row gap-4 mt-10">
+          <motion.button
+            onClick={() => router.push("/formation")}
+            className="px-8 py-4 bg-[#D9D9D9] text-[#00183F] border-4 border-[#00183F] font-black text-xl uppercase tracking-wider transition-all duration-75 shadow-[6px_6px_0_0_#0033A0]"
+            whileHover={{ translateY: -2, translateX: -2, boxShadow: "10px 10px 0 0 #0033A0" }}
+            whileTap={{ translateY: 4, translateX: 4, boxShadow: "0px 0px 0 0 #0033A0" }}
+          >
+            {t.button}
+          </motion.button>
+
+          <motion.button
+            onClick={() => router.push("/online")}
+            className="px-8 py-4 bg-emerald-500 text-[#00183F] border-4 border-[#00183F] font-black text-xl uppercase tracking-wider transition-all duration-75 shadow-[6px_6px_0_0_#00183F]"
+            whileHover={{ translateY: -2, translateX: -2, boxShadow: "10px 10px 0 0 #00183F" }}
+            whileTap={{ translateY: 4, translateX: 4, boxShadow: "0px 0px 0 0 #00183F" }}
+          >
+            {t.buttonOnline}
+          </motion.button>
+        </div>
       </motion.div>
 
-      {/* LADO DIREITO: Campo com o Time dos Sonhos */}
       <motion.div
         className="flex-1 w-full max-w-lg hidden md:flex flex-col relative z-10"
         initial={{ opacity: 0, x: 50 }}
@@ -109,41 +110,31 @@ export default function HomePage() {
         transition={{ duration: 0.7, delay: 0.2 }}
       >
         <div className="w-full bg-[#1A3B2B] border-4 border-white shadow-[16px_16px_0_0_rgba(0,0,0,0.8)] relative p-6 flex flex-col justify-between" style={{ height: "700px" }}>
-          
           <div className="absolute top-1/2 left-0 w-full h-1 bg-white/30 -translate-y-1/2" />
           <div className="absolute top-1/2 left-1/2 w-32 h-32 border-4 border-white/30 -translate-x-1/2 -translate-y-1/2 rounded-none transform rotate-45" />
           <div className="absolute top-0 left-1/2 w-48 h-32 border-b-4 border-l-4 border-r-4 border-white/30 -translate-x-1/2" />
           <div className="absolute bottom-0 left-1/2 w-48 h-32 border-t-4 border-l-4 border-r-4 border-white/30 -translate-x-1/2" />
 
           <motion.div variants={containerVariants} initial="hidden" animate="show" className="h-full flex flex-col justify-between relative z-10 py-4">
-            
-            {/* Ataque */}
             <div className="flex justify-between px-4">
               <PlayerCard player={dreamTeam[1]} /> 
               <PlayerCard player={dreamTeam[0]} /> 
               <PlayerCard player={dreamTeam[2]} /> 
             </div>
-
-            {/* Meio-campo */}
             <div className="flex justify-around px-8 mt-4">
               <PlayerCard player={dreamTeam[5]} /> 
               <PlayerCard player={dreamTeam[4]} className="mt-8" /> 
               <PlayerCard player={dreamTeam[3]} /> 
             </div>
-
-            {/* Defesa */}
             <div className="flex justify-between px-0 mt-4">
               <PlayerCard player={dreamTeam[6]} /> 
               <PlayerCard player={dreamTeam[7]} /> 
               <PlayerCard player={dreamTeam[8]} /> 
               <PlayerCard player={dreamTeam[9]} /> 
             </div>
-
-            {/* Goleiro */}
             <div className="flex justify-center mt-4">
               <PlayerCard player={dreamTeam[10]} /> 
             </div>
-
           </motion.div>
         </div>
 
@@ -164,23 +155,13 @@ function PlayerCard({ player, className = "" }: { player: any; className?: strin
         hidden: { opacity: 0, y: 20 },
         show: { opacity: 1, y: 0, transition: { type: "spring" } }
       }}
-      whileHover={{ 
-        scale: 1.1, 
-        zIndex: 20,
-        boxShadow: "6px 6px 0 0 #0033A0"
-      }}
+      whileHover={{ scale: 1.1, zIndex: 20, boxShadow: "6px 6px 0 0 #0033A0" }}
       className={`bg-white border-2 border-[#00183F] shadow-[4px_4px_0_0_rgba(0,0,0,0.6)] w-[46px] h-[60px] sm:w-[54px] sm:h-[68px] md:w-[72px] md:h-[85px] flex flex-col relative cursor-default overflow-hidden ${className}`}
     >
-      <div className="bg-[#00183F] text-white text-[7px] md:text-[10px] font-black text-center border-b-2 border-[#00183F]">
-        {player.pos}
-      </div>
-      
+      <div className="bg-[#00183F] text-white text-[7px] md:text-[10px] font-black text-center border-b-2 border-[#00183F]">{player.pos}</div>
       <div className="flex-1 flex items-center justify-center bg-[#D9D9D9]">
-        <span className={`text-sm md:text-2xl font-black ${player.ovr >= 95 ? 'text-amber-600' : 'text-[#00183F]'}`}>
-          {player.ovr}
-        </span>
+        <span className={`text-sm md:text-2xl font-black ${player.ovr >= 95 ? 'text-amber-600' : 'text-[#00183F]'}`}>{player.ovr}</span>
       </div>
-      
       <div className="bg-white p-0.5 md:p-1 text-center border-t-2 border-[#00183F]">
         <h3 className="text-[7px] md:text-[9px] font-bold text-[#00183F] leading-none truncate uppercase">{player.name}</h3>
         <p className="text-[5px] md:text-[7px] text-gray-500 font-semibold truncate mt-0.5">{player.team}</p>
