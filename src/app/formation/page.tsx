@@ -10,7 +10,8 @@ import Button from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import { TRANSLATIONS } from "@/lib/constants";
 
-const formations: FormationType[] = ["4-3-3", "4-4-2", "3-4-3"];
+// Array de formações atualizado com as 3 novas táticas
+const formations: FormationType[] = ["4-3-3", "4-4-2", "3-4-3", "3-5-2", "5-4-1", "4-2-3-1"];
 
 export default function FormationPage() {
   const router = useRouter();

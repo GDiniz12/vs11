@@ -43,8 +43,12 @@ export default function DraftPage() {
     }
   }, [currentDraftTeam, draftRound, drawNextTeam]);
 
+  // Atualizado para checar duplicatas
   const hasSelectablePlayers = currentDraftTeam?.players.some(
-    (p) => getAvailablePositions(slots, p.positions).length > 0
+    (p) => {
+      const isAlreadyDrafted = slots.some((s) => s.player?.name === p.name);
+      return !isAlreadyDrafted && getAvailablePositions(slots, p.positions).length > 0;
+    }
   ) ?? true;
 
   const handleReroll = () => {
@@ -57,6 +61,10 @@ export default function DraftPage() {
   };
 
   const handlePlayerSelect = (player: Player) => {
+    // Trava de segurança caso o clique ocorra antes da interface desabilitar o botão
+    const isAlreadyDrafted = slots.some((s) => s.player?.name === player.name);
+    if (isAlreadyDrafted) return;
+
     const availIds = getAvailablePositions(slots, player.positions);
     const avail = slots.filter((s) => availIds.includes(s.id));
 

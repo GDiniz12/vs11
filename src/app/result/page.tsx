@@ -130,12 +130,12 @@ export default function ResultPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15, type: "spring" }}
         >
-          <Card className="p-6 border-4 border-[#00183F] bg-[#1E293B] shadow-[12px_12px_0_0_rgba(0,0,0,0.6)]">
-            <h2 className="text-xl md:text-2xl font-black uppercase text-white tracking-wider mb-6 border-l-8 border-amber-400 pl-4">
+          <Card className="p-6 border-4 border-[#00183F] bg-white shadow-[12px_12px_0_0_#0033A0]">
+            <h2 className="text-xl md:text-2xl font-black uppercase text-[#00183F] tracking-wider mb-6 border-l-8 border-[#0033A0] pl-4">
               {t.teamTitle} ({userTeamName})
             </h2>
             
-            <div className="bg-black/20 p-4 border-2 border-white/10">
+            <div className="bg-[#1E293B] p-4 border-4 border-[#00183F]">
               <FootballPitch slots={slots} />
             </div>
           </Card>

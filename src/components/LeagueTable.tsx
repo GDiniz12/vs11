@@ -2,10 +2,25 @@
 
 import React from "react";
 import { LeagueTeam } from "@/types";
+import { clubLogos } from "@/data/data";
 
 interface LeagueTableProps {
   table: LeagueTeam[];
 }
+
+// Função para formatar o nome do time e buscar a logo correspondente
+const getLogoUrl = (teamName: string) => {
+  if (!teamName) return "";
+  let formatted = teamName
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .toLowerCase()
+    .replace(/\s+/g, "-"); // Substitui espaços por hífen
+  
+  // Remove o ano se existir
+  formatted = formatted.replace(/-\d{4}$/, "");
+  return clubLogos[formatted] || "";
+};
 
 export default function LeagueTable({ table }: LeagueTableProps) {
   return (
@@ -14,7 +29,7 @@ export default function LeagueTable({ table }: LeagueTableProps) {
         <thead className="bg-[#00183F] text-white border-b-4 border-[#00183F] uppercase tracking-wider text-xs md:text-sm">
           <tr>
             <th className="py-3 px-3 text-left font-black w-10">#</th>
-            <th className="py-3 px-3 text-left font-black min-w-[160px]">Time</th>
+            <th className="py-3 px-3 text-left font-black min-w-[200px]">Time</th>
             <th className="py-3 px-2 text-center font-black w-8">J</th>
             <th className="py-3 px-2 text-center font-black w-8">V</th>
             <th className="py-3 px-2 text-center font-black w-8">E</th>
@@ -29,6 +44,7 @@ export default function LeagueTable({ table }: LeagueTableProps) {
           {table.map((team, idx) => {
             const pos = idx + 1;
             const isQualified = pos <= 16;
+            const logo = getLogoUrl(team.name);
 
             return (
               <tr
@@ -53,7 +69,12 @@ export default function LeagueTable({ table }: LeagueTableProps) {
                   </div>
                 </td>
                 <td className={`py-3 px-3 uppercase tracking-tight ${team.isUser ? "text-[#0033A0] font-black" : ""}`}>
-                  {team.name}
+                  <div className="flex items-center gap-2">
+                    {logo && (
+                      <img src={logo} alt={team.name} className="w-5 h-5 md:w-6 md:h-6 object-contain drop-shadow-sm" />
+                    )}
+                    <span className="truncate">{team.name}</span>
+                  </div>
                 </td>
                 <td className="py-3 px-2 text-center text-gray-500">{team.played}</td>
                 <td className="py-3 px-2 text-center">{team.won}</td>
