@@ -10,13 +10,12 @@ import Button from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
 import { TRANSLATIONS } from "@/lib/constants";
 
-// Array de formações atualizado com as 3 novas táticas
 const formations: FormationType[] = ["4-3-3", "4-4-2", "3-4-3", "3-5-2", "5-4-1", "4-2-3-1"];
 
 export default function FormationPage() {
   const router = useRouter();
   const { lang } = useLanguage();
-  const { formation, setFormation, slots, drawNextTeam, setPhase } = useGame();
+  const { formation, setFormation, gameMode, setGameMode, slots, drawNextTeam, setPhase } = useGame();
 
   const handleBegin = () => {
     if (!formation) return;
@@ -45,7 +44,38 @@ export default function FormationPage() {
           </p>
         </div>
 
-        {/* Seletor de Formações (Botões Quadrados e Sombra Dura) */}
+        {/* MODO DE JOGO */}
+        <div className="mb-10 w-full flex flex-col items-center">
+          <h2 className="text-xl font-black text-white uppercase tracking-widest border-b-4 border-white/20 pb-2 mb-6">
+            {lang === "pt" ? "Escolha o Modo" : "Choose Game Mode"}
+          </h2>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <button
+              onClick={() => setGameMode("classic")}
+              className={`flex flex-col items-center justify-center p-4 border-4 border-[#00183F] w-full sm:w-64 transition-all duration-75 ${
+                gameMode === 'classic' 
+                ? 'bg-[#0033A0] text-white translate-x-[2px] translate-y-[2px] shadow-none' 
+                : 'bg-white text-[#00183F] shadow-[6px_6px_0_0_#0033A0] hover:-translate-y-1 hover:-translate-x-1'
+              }`}
+            >
+              <span className="text-xl font-black uppercase tracking-widest">{lang === 'pt' ? 'Clássico' : 'Classic'}</span>
+              <span className="text-xs font-bold mt-2 opacity-80">{lang === 'pt' ? '3 Sorteios • Overalls Visíveis' : '3 Re-rolls • Visible Overalls'}</span>
+            </button>
+            <button
+              onClick={() => setGameMode("hardcore")}
+              className={`flex flex-col items-center justify-center p-4 border-4 transition-all duration-75 w-full sm:w-64 ${
+                gameMode === 'hardcore' 
+                ? 'bg-rose-600 text-white translate-x-[2px] translate-y-[2px] shadow-none border-[#00183F]' 
+                : 'bg-[#1E293B] text-rose-500 shadow-[6px_6px_0_0_#9f1239] hover:-translate-y-1 hover:-translate-x-1 border-[#00183F]'
+              }`}
+            >
+              <span className="text-xl font-black uppercase tracking-widest">Hardcore</span>
+              <span className="text-xs font-bold mt-2 opacity-80">{lang === 'pt' ? '1 Sorteio • Overalls Ocultos' : '1 Re-roll • Hidden Overalls'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Seletor de Formações */}
         <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 mb-10">
           {formations.map((f) => (
             <button
@@ -66,14 +96,11 @@ export default function FormationPage() {
           ))}
         </div>
 
-        {/* Campo de Futebol (Pitch) */}
+        {/* Campo de Futebol */}
         <div className="flex justify-center mb-10">
           {formation ? (
-            // A key={formation} é o que CONSERTA O BUG. 
-            // Ela obriga o React e o Framer Motion a renderizar as posições do zero sem tentar interpolar os layouts antigos.
             <FootballPitch key={formation} slots={slots} />
           ) : (
-            // Estado "Vazio" do campo antes da escolha
             <div className="w-full max-w-[420px] mx-auto p-2">
               <div 
                 className="relative w-full rounded-none border-4 border-dashed border-white/50 bg-[#1A3B2B]/40 shadow-[12px_12px_0_0_rgba(0,0,0,0.5)]" 
@@ -89,7 +116,6 @@ export default function FormationPage() {
           )}
         </div>
 
-        {/* Botão de Iniciar Draft */}
         <div className="text-center">
           <Button
             variant="primary"

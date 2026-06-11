@@ -13,6 +13,7 @@ interface TeamCardProps {
   slots: FormationSlot[];
   onPlayerSelect: (player: Player) => void;
   selectedPlayer?: Player | null;
+  hideOverall?: boolean; // Nova propriedade
 }
 
 export default function TeamCard({
@@ -20,9 +21,9 @@ export default function TeamCard({
   slots,
   onPlayerSelect,
   selectedPlayer,
+  hideOverall,
 }: TeamCardProps) {
   
-  // Extrai o nome base do time (ex: "santos-2011" vira "santos") para buscar o logo
   const baseTeamName = team.key ? team.key.replace(/-\d{4}$/, "") : "";
   const logoUrl = clubLogos[baseTeamName];
 
@@ -35,10 +36,8 @@ export default function TeamCard({
     >
       <Card className="overflow-hidden p-4 md:p-6 bg-white border-4 border-[#00183F] shadow-[8px_8px_0_0_#0033A0]">
         
-        {/* Cabeçalho do Time Brutalista com Escudo */}
         <div className="mb-6 pb-4 border-b-4 border-[#00183F] flex flex-col items-start gap-3">
           <div className="flex items-center gap-3 md:gap-4">
-            {/* Renderiza o SVG se a chave for encontrada */}
             {logoUrl && (
               <img 
                 src={logoUrl} 
@@ -56,7 +55,6 @@ export default function TeamCard({
           </span>
         </div>
 
-        {/* Lista de Jogadores */}
         <div className="space-y-2">
           {team.players.map((player, idx) => {
             const isAlreadyDrafted = slots.some((s) => s.player?.name === player.name);
@@ -75,6 +73,7 @@ export default function TeamCard({
                 disabled={disabled}
                 onClick={() => onPlayerSelect(player)}
                 isSelected={isSelected}
+                hideOverall={hideOverall} // Repassando a regra do hardcore
               />
             );
           })}

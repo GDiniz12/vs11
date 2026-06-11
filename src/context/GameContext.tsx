@@ -17,6 +17,7 @@ import {
   MatchResult,
   KnockoutRound,
   GameStats,
+  GameMode,
 } from '@/types';
 import { useLanguage } from '@/context/LanguageContext';
 import { TRANSLATIONS } from '@/lib/constants';
@@ -33,6 +34,7 @@ import { americans, europeans } from '@/data/data';
 interface GameState {
   phase: GamePhase;
   formation: FormationType | null;
+  gameMode: GameMode;
   slots: FormationSlot[];
   draftRound: number;
   currentDraftTeam: TeamData | null;
@@ -46,6 +48,7 @@ interface GameState {
 
 interface GameContextType extends GameState {
   setFormation: (f: FormationType) => void;
+  setGameMode: (m: GameMode) => void;
   assignPlayerToSlot: (player: Player, slotId: number) => void;
   drawNextTeam: () => void;
   startLeaguePhase: () => void;
@@ -65,6 +68,7 @@ const initialStats: GameStats = {
 const initialState: GameState = {
   phase: 'home',
   formation: null,
+  gameMode: 'classic', // Default é clássico
   slots: [],
   draftRound: 0,
   currentDraftTeam: null,
@@ -90,6 +94,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const setGameMode = useCallback((m: GameMode) => {
+    setState((prev) => ({
+      ...prev,
+      gameMode: m,
+    }));
+  }, []);
+
   const drawNextTeam = useCallback(() => {
     const team = getRandomTeam(americans, europeans);
     setState((prev) => ({ ...prev, currentDraftTeam: team }));
@@ -103,7 +114,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
         );
         const newRound = prev.draftRound + 1;
 
-        // Draw a new team for next round if not done
         let nextTeam: TeamData | null = null;
         if (newRound < 11) {
           nextTeam = getRandomTeam(americans, europeans);
@@ -128,7 +138,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const userStrength = calculateTeamStrength(userPlayers);
       const userTeamName = TRANSLATIONS[lang].your_team;
 
-      // Get all teams from data and compute strengths
       const allDataTeams = getAllTeams(americans, europeans);
       const teamEntries = allDataTeams.map((t) => ({
         name: t.name,
@@ -137,7 +146,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
           t.players.length,
       }));
 
-      // Shuffle and take 35 teams (+ user = 36)
       const shuffled = shuffleArray(teamEntries).slice(0, 35);
       const allTeams = [
         { name: userTeamName, strength: userStrength },
@@ -150,7 +158,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
         allTeams
       );
 
-      // Calculate user stats from league phase
       const stats: GameStats = { ...initialStats };
       userMatches.forEach((m) => {
         const isHome = m.homeTeam === userTeamName;
@@ -172,7 +179,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         userTeamName,
       };
     });
-  }, []);
+  }, [lang]);
 
   const startKnockoutPhase = useCallback(() => {
     setState((prev) => {
@@ -187,10 +194,8 @@ export function GameProvider({ children }: { children: ReactNode }) {
         userStrength
       );
 
-      // Update stats from knockout
       const newStats = { ...prev.stats };
       rounds.forEach((r) => {
-        // Leg 1
         const isHomeLeg1 = r.leg1.homeTeam === prev.userTeamName;
         const ug1 = isHomeLeg1 ? r.leg1.homeGoals : r.leg1.awayGoals;
         const og1 = isHomeLeg1 ? r.leg1.awayGoals : r.leg1.homeGoals;
@@ -200,7 +205,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
         else if (ug1 < og1) newStats.losses++;
         else newStats.draws++;
 
-        // Leg 2
         if (r.leg2) {
           const isHomeLeg2 = r.leg2.homeTeam === prev.userTeamName;
           const ug2 = isHomeLeg2 ? r.leg2.homeGoals : r.leg2.awayGoals;
@@ -213,7 +217,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
         }
       });
 
-      // Check if champion
       const lastRound = rounds[rounds.length - 1];
       const isChampion =
         lastRound?.round === 'Final' && lastRound?.userAdvanced;
@@ -233,14 +236,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const resetGame = useCallback(() => {
-    setState({ ...initialState });
-  }, []);
+    setState({ ...initialState, userTeamName: TRANSLATIONS[lang].your_team });
+  }, [lang]);
 
   return (
     <GameContext.Provider
       value={{
         ...state,
         setFormation,
+        setGameMode,
         assignPlayerToSlot,
         drawNextTeam,
         startLeaguePhase,

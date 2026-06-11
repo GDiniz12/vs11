@@ -10,6 +10,7 @@ interface PlayerRowProps {
   disabled: boolean;
   onClick: () => void;
   isSelected?: boolean;
+  hideOverall?: boolean; // Propriedade para controlar visibilidade
 }
 
 export default function PlayerRow({
@@ -17,6 +18,7 @@ export default function PlayerRow({
   disabled,
   onClick,
   isSelected = false,
+  hideOverall = false,
 }: PlayerRowProps) {
   const { lang } = useLanguage();
 
@@ -47,8 +49,10 @@ export default function PlayerRow({
       <span className="flex-1 text-sm font-bold truncate">
         {player.name}
       </span>
-      <span className={`text-sm font-black min-w-[28px] text-right border-l-2 border-[#00183F]/20 pl-2 ${player.overall >= 90 ? "text-amber-600" : "text-[#0033A0]"}`}>
-        {player.overall}
+      
+      {/* Aqui ocultamos a nota se for Hardcore */}
+      <span className={`text-sm font-black min-w-[28px] text-right border-l-2 border-[#00183F]/20 pl-2 ${!hideOverall && player.overall >= 90 ? "text-amber-600" : "text-[#0033A0]"}`}>
+        {hideOverall ? "??" : player.overall}
       </span>
     </div>
   );

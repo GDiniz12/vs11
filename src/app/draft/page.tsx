@@ -22,20 +22,22 @@ export default function DraftPage() {
     slots,
     assignPlayerToSlot,
     drawNextTeam,
+    gameMode,
   } = useGame();
 
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [showPositionPicker, setShowPositionPicker] = useState(false);
   const [availableSlots, setAvailableSlots] = useState<FormationSlot[]>([]);
   
-  const [rerollsLeft, setRerollsLeft] = useState(3);
+  // Limita as chances de acordo com o modo
+  const maxRerolls = gameMode === "hardcore" ? 1 : 3;
+  const [rerollsLeft, setRerollsLeft] = useState(maxRerolls);
 
-  // Os sorteios duram o draft inteiro. Só resetam se iniciar um novo jogo (Rodada 0).
   useEffect(() => {
     if (draftRound === 0) {
-      setRerollsLeft(3);
+      setRerollsLeft(maxRerolls);
     }
-  }, [draftRound]);
+  }, [draftRound, maxRerolls]);
 
   useEffect(() => {
     if (!currentDraftTeam && draftRound < 11) {
@@ -43,7 +45,6 @@ export default function DraftPage() {
     }
   }, [currentDraftTeam, draftRound, drawNextTeam]);
 
-  // Atualizado para checar duplicatas
   const hasSelectablePlayers = currentDraftTeam?.players.some(
     (p) => {
       const isAlreadyDrafted = slots.some((s) => s.player?.name === p.name);
@@ -61,7 +62,6 @@ export default function DraftPage() {
   };
 
   const handlePlayerSelect = (player: Player) => {
-    // Trava de segurança caso o clique ocorra antes da interface desabilitar o botão
     const isAlreadyDrafted = slots.some((s) => s.player?.name === player.name);
     if (isAlreadyDrafted) return;
 
@@ -132,8 +132,11 @@ export default function DraftPage() {
         className="mb-8 border-4 border-white bg-[#D9D9D9] p-4 md:p-6 shadow-[8px_8px_0_0_#0033A0]"
       >
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-4 gap-4">
-          <h1 className="text-3xl md:text-4xl font-black text-[#00183F] uppercase tracking-tight">
+          <h1 className="text-3xl md:text-4xl font-black text-[#00183F] uppercase tracking-tight flex items-center gap-3">
             {TRANSLATIONS[lang].build_your_squad}
+            {gameMode === "hardcore" && (
+              <span className="bg-rose-600 text-white text-xs px-2 py-1 border-2 border-[#00183F]">HARDCORE</span>
+            )}
           </h1>
           <div className="flex items-center gap-2 bg-white border-4 border-[#00183F] px-4 py-2 shadow-[4px_4px_0_0_rgba(0,0,0,0.5)]">
             <span className="text-xs md:text-sm font-black text-gray-500 uppercase">
@@ -146,7 +149,6 @@ export default function DraftPage() {
           </div>
         </div>
 
-        {/* BARRA DE PROGRESSO */}
         <div className="w-full h-6 bg-white border-4 border-[#00183F] relative overflow-hidden">
           <motion.div
             className="h-full bg-[#0033A0] border-r-4 border-[#00183F]"
@@ -159,10 +161,8 @@ export default function DraftPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         
-        {/* LADO ESQUERDO: Controles ou Botão de Simular */}
         <div className="flex flex-col gap-6">
           {isDraftComplete ? (
-            // ESTADO DE CONCLUSÃO MANTENDO O RESTANTE DA TELA VISÍVEL
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
@@ -185,7 +185,6 @@ export default function DraftPage() {
               </button>
             </motion.div>
           ) : (
-            // ESTADO DE DRAFT (Escolhendo Jogadores)
             <>
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white border-4 border-[#00183F] p-4 shadow-[6px_6px_0_0_#0033A0]">
                 <div className="mb-4 sm:mb-0">
@@ -193,7 +192,7 @@ export default function DraftPage() {
                     {tDraft.title}
                   </h3>
                   <p className={`text-xs md:text-sm font-bold uppercase mt-1 ${!hasSelectablePlayers ? "text-emerald-600" : "text-gray-500"}`}>
-                    {!hasSelectablePlayers ? tDraft.freeDesc : `${tDraft.chances}: ${rerollsLeft}/3`}
+                    {!hasSelectablePlayers ? tDraft.freeDesc : `${tDraft.chances}: ${rerollsLeft}/${maxRerolls}`}
                   </p>
                 </div>
 
@@ -223,6 +222,8 @@ export default function DraftPage() {
                     slots={slots}
                     onPlayerSelect={handlePlayerSelect}
                     selectedPlayer={selectedPlayer}
+                    // Informando à carta se deve ou não esconder os overalls
+                    hideOverall={gameMode === "hardcore"}
                   />
                 )}
               </AnimatePresence>
@@ -230,7 +231,6 @@ export default function DraftPage() {
           )}
         </div>
 
-        {/* LADO DIREITO: Campo e Escalação sempre visíveis */}
         <div className="space-y-6">
           <Card className="p-4 md:p-6 bg-[#1E293B]">
             <FootballPitch
@@ -245,7 +245,6 @@ export default function DraftPage() {
         </div>
       </div>
 
-      {/* MODAL DE POSIÇÃO */}
       {showPositionPicker && selectedPlayer && (
         <PositionPicker
           player={selectedPlayer}

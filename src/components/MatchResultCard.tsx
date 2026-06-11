@@ -19,29 +19,37 @@ const getLogoUrl = (teamName: string) => {
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/\s+/g, "-");
-  formatted = formatted.replace(/-\d{4}$/, "");
+  formatted = formatted.replace(/-\d{4}$/, ""); // Para o logo, nós removemos o ano
   return clubLogos[formatted] || "";
 };
 
-// Pega a lista de jogadores de um time adversário para simular quem fez os gols contra você
+// Pega a lista de jogadores EXATAMENTE do ano que o time jogou
 const getOpponentPlayers = (teamName: string) => {
   const allTeams = { ...americans, ...europeans };
-  let formatted = teamName
+  
+  // Transforma "Real Madrid 2014" em "real-madrid-2014"
+  const exactKey = teamName
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/\s+/g, "-");
-  formatted = formatted.replace(/-\d{4}$/, "");
   
-  const teamKey = Object.keys(allTeams).find((k) => k.startsWith(formatted));
-  if (teamKey) {
-    return allTeams[teamKey].map((p: any) => p[0] as string);
+  // Procura primeiro pela chave exata (time + ano)
+  if (allTeams[exactKey]) {
+    return allTeams[exactKey].map((p: any) => p[0] as string);
   }
+
+  // Fallback (caso dê erro, ele procura pelo nome base)
+  const baseName = exactKey.replace(/-\d{4}$/, "");
+  const fallbackKey = Object.keys(allTeams).find((k) => k.startsWith(baseName));
+  if (fallbackKey) {
+    return allTeams[fallbackKey].map((p: any) => p[0] as string);
+  }
+  
   return ["Atacante", "Meia", "Zagueiro", "Ponta", "Volante"];
 };
 
 export default function MatchResultCard({ match, userTeamName, index, stage }: MatchResultCardProps) {
-  // Puxando o seu elenco montado diretamente do Contexto!
   const { slots } = useGame(); 
 
   const isHome = match.homeTeam === userTeamName;
@@ -55,17 +63,13 @@ export default function MatchResultCard({ match, userTeamName, index, stage }: M
   const userLogo = getLogoUrl(userTeamName);
   const oppLogo = getLogoUrl(opponentName);
 
-  // === GERADOR DETERMINÍSTICO DE ARTILHEIROS ===
-  // Garante que os autores dos gols nunca mudem sozinhos ao trocar de tela
   const { userScorers, oppScorers } = useMemo(() => {
-    // Cria uma semente única para cada jogo
     const seedString = `${match.homeTeam}-${match.awayTeam}-${match.homeGoals}-${match.awayGoals}-${stage || "group"}`;
     let seed = 0;
     for (let i = 0; i < seedString.length; i++) {
       seed = seedString.charCodeAt(i) + ((seed << 5) - seed);
     }
     
-    // Função matemática que imita random, mas é fixa para a semente
     const random = () => {
       let x = Math.sin(seed++) * 10000;
       return x - Math.floor(x);
@@ -75,17 +79,14 @@ export default function MatchResultCard({ match, userTeamName, index, stage }: M
       if (goals === 0) return [];
       let players: string[] = [];
       
-      // Se for o seu time, pega APENAS os jogadores que você draftou!
       if (teamName === userTeamName && slots && slots.length > 0) {
         players = slots.filter((s) => s.player).map((s) => s.player!.name);
       } else {
-        // Se for o adversário, busca o elenco original na base
         players = getOpponentPlayers(teamName);
       }
 
       const scorers: string[] = [];
       for (let i = 0; i < goals; i++) {
-        // 70% de chance de o gol sair de um jogador do ataque/meio (final do array)
         const isAttacker = random() > 0.3; 
         let randIdx = 0;
         
@@ -160,7 +161,6 @@ export default function MatchResultCard({ match, userTeamName, index, stage }: M
           {(userScorers.length > 0 || oppScorers.length > 0) && (
             <div className="mt-4 pt-3 border-t-2 border-dashed border-[#00183F]/20 flex justify-between gap-4 text-[10px] md:text-xs font-black uppercase tracking-wider">
               
-              {/* Artilheiros do Seu Time */}
               <div className="flex-1 flex flex-col items-start gap-1">
                 {userScorers.map((scorer, i) => (
                   <div key={`user-scorer-${i}`} className="flex items-center gap-1.5 text-[#0033A0]">
@@ -170,7 +170,6 @@ export default function MatchResultCard({ match, userTeamName, index, stage }: M
                 ))}
               </div>
 
-              {/* Artilheiros do Adversário */}
               <div className="flex-1 flex flex-col items-end gap-1">
                 {oppScorers.map((scorer, i) => (
                   <div key={`opp-scorer-${i}`} className="flex items-center justify-end gap-1.5 text-rose-700">

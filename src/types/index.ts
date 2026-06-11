@@ -4,8 +4,10 @@ export type PositionCode =
   | "ME" | "MD"
   | "PE" | "PD" | "CA";
 
-// Adicionadas as 3 novas opções
 export type FormationType = "4-3-3" | "4-4-2" | "3-4-3" | "3-5-2" | "5-4-1" | "4-2-3-1";
+
+// Novo tipo adicionado para os modos de jogo
+export type GameMode = "classic" | "hardcore";
 
 export interface Player {
   name: string;
