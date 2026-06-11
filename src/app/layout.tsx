@@ -1,32 +1,30 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { GameProvider } from "@/context/GameContext";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { GameProvider } from "@/context/GameContext";
+import SupportButton from "@/components/SupportButton"; // <-- 1. Importe o componente
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "16a0",
-  description:
-    "Build your dream squad and conquer Europe in this premium football simulation game.",
-  icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon.ico",
-  },
-
+  title: "16a0 - The Draft Game",
+  description: "Construa seu elenco e conquiste o campeonato.",
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="en">
-      <body className={`${inter.className} bg-plum-dark min-h-screen`}>
+    <html lang="pt-BR">
+      <body className={inter.className}>
         <LanguageProvider>
-          <GameProvider>{children}</GameProvider>
+          <GameProvider>
+            {children}
+            <SupportButton /> {/* <-- 2. Adicione ele aqui! */}
+          </GameProvider>
         </LanguageProvider>
       </body>
     </html>
