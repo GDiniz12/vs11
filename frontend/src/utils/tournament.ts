@@ -78,7 +78,7 @@ export function simulateMatch(
   const diff = hStr - aStr;
   
   // Base de gols esperados por time em um jogo equilibrado
-  const BASE_GOALS = 1.3;
+  const BASE_GOALS = 1.0;
   const HOME_ADVANTAGE = 0.3;
 
   // Curva não linear para diferença de força - ajustada para penalizar/recompensar mais

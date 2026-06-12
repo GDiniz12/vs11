@@ -125,7 +125,7 @@ export default function TournamentPage() {
                 <Button variant="primary" onClick={() => setSimulationMode('automatic')} className="w-full sm:w-auto">
                   SIMULAÇÃO AUTOMÁTICA
                 </Button>
-                <Button variant="outline" onClick={() => setSimulationMode('accompanied')} className="w-full sm:w-auto border-[#00183F] text-[#00183F] hover:bg-[#00183F] hover:text-white">
+                <Button variant="outline" onClick={() => setSimulationMode('accompanied')} className="w-full sm:w-auto border-[#00183F] bg-amber-400 text-[#00183F] hover:bg-amber-500 font-black">
                   SIMULAÇÃO ACOMPANHADA
                 </Button>
               </div>

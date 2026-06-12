@@ -127,7 +127,15 @@ export function calculateTeamChemistry(slots: FormationSlot[], formation: Format
         }
       }
     });
-  }
+  } // <--- Added closing brace
   
-  return Math.min(Math.floor((total + managerBonus) / links.length), 100);
+  // BÔNUS PARA JOGADORES LENDAS (OVR >= 91)
+  let legendsBonus = 0;
+  slots.forEach(s => {
+    if (s.player && s.player.overall >= 91) {
+      legendsBonus += 40; // Lendas inspiram a equipe
+    }
+  });
+  
+  return Math.min(Math.floor((total + managerBonus + legendsBonus) / links.length), 100);
 }

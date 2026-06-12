@@ -40,6 +40,8 @@ export default function DraftPage() {
   const maxRerolls = gameMode === "hardcore" ? 1 : 3;
   const [rerollsLeft, setRerollsLeft] = useState(maxRerolls);
 
+  const baseChemistry = useMemo(() => calculateTeamChemistry(slots, formation, null), [slots, formation]);
+
   const isManagerDraft = draftRound === 11;
   const isDraftComplete = draftRound >= 12;
 
@@ -154,6 +156,11 @@ export default function DraftPage() {
 
   const handlePlayerSelect = (player: Player) => {
     if (isRolling) return;
+    if (selectedPlayer?.name === player.name) {
+      setSelectedPlayer(null);
+      setAvailableSlots([]);
+      return;
+    }
     const isAlreadyDrafted = slots.some((s) => s.player?.name === player.name);
     if (isAlreadyDrafted) return;
 
@@ -161,29 +168,21 @@ export default function DraftPage() {
     const avail = slots.filter((s) => availIds.includes(s.id));
 
     if (avail.length === 0) return;
-    if (avail.length === 1) {
-      assignPlayerToSlot(player, avail[0].id);
-      setSelectedPlayer(null);
-      setShowPositionPicker(false);
-      return;
-    }
+    
     setSelectedPlayer(player);
     setAvailableSlots(avail);
-    setShowPositionPicker(true);
   };
 
-  const handlePositionConfirm = (slotId: number) => {
-    if (selectedPlayer) {
+  const handleSlotClick = (slotId: number) => {
+    if (selectedPlayer && highlightedSlotIds.includes(slotId)) {
       assignPlayerToSlot(selectedPlayer, slotId);
       setSelectedPlayer(null);
-      setShowPositionPicker(false);
       setAvailableSlots([]);
     }
   };
 
   const handleCancel = () => {
     setSelectedPlayer(null);
-    setShowPositionPicker(false);
     setAvailableSlots([]);
   };
 
@@ -326,13 +325,17 @@ export default function DraftPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {currentDraftManagers.map((mgr, idx) => (
+                {currentDraftManagers.map((mgr, idx) => {
+                  const chemWithManager = calculateTeamChemistry(slots, formation, mgr);
+                  const chemDiff = chemWithManager - baseChemistry;
+                  
+                  return (
                   <div
                     key={idx}
                     onClick={() => assignManager(mgr)}
                     className="bg-white border-4 border-[#00183F] p-4 cursor-pointer hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#0033A0] transition-transform flex flex-col"
                   >
-                    <div className="flex justify-between items-start">
+                    <div className="flex justify-between items-start mb-2">
                       <span className="font-black text-[#00183F] text-lg md:text-xl uppercase leading-none">{mgr.tecnico}</span>
                       {mgr.overall && (
                         <span className="bg-[#0033A0] text-white px-2 py-1 text-sm font-black border-2 border-[#00183F]">
@@ -340,14 +343,19 @@ export default function DraftPage() {
                         </span>
                       )}
                     </div>
-                    <span className="text-xs md:text-sm font-black text-[#0033A0] uppercase mt-2">
+                    {gameMode !== 'hardcore' && chemDiff > 0 && (
+                      <span className="bg-emerald-500 text-white font-black text-[10px] md:text-xs px-2 py-0.5 border-2 border-[#00183F] self-start shadow-[2px_2px_0_0_#00183F] mb-2 animate-pulse-soft">
+                        ENTROSAMENTO +{chemDiff}
+                      </span>
+                    )}
+                    <span className="text-xs md:text-sm font-black text-[#0033A0] uppercase mt-auto">
                       {mgr.clubeAno.replace(/-/g, " ")}
                     </span>
                     <span className="text-[10px] md:text-xs font-black text-gray-400 uppercase mt-2 border-t-2 border-dashed pt-2">
                       {getCountryEmoji(mgr.nacionalidade)} {mgr.nacionalidade}
                     </span>
                   </div>
-                ))}
+                )})}
               </div>
             </>
           ) : (
@@ -400,9 +408,20 @@ export default function DraftPage() {
 
         <div className="space-y-6">
           <Card className="p-4 md:p-6 bg-[#1E293B]">
+            {selectedPlayer && (
+               <div className="bg-amber-400 border-4 border-[#00183F] p-3 mb-4 flex justify-between items-center shadow-[4px_4px_0_0_rgba(0,0,0,0.5)]">
+                 <span className="text-[#00183F] font-black uppercase text-xs md:text-sm">
+                   ESCOLHA A POSIÇÃO NO CAMPO PARA {selectedPlayer.name}
+                 </span>
+                 <button onClick={handleCancel} className="bg-rose-500 text-white font-black text-xs px-2 py-1 border-2 border-[#00183F] hover:bg-rose-600 transition-colors">
+                   CANCELAR
+                 </button>
+               </div>
+            )}
             <FootballPitch
               slots={slots}
               formation={formation}
+              onSlotClick={handleSlotClick}
               highlightedSlots={highlightedSlotIds}
               manager={manager}
             />
@@ -414,14 +433,7 @@ export default function DraftPage() {
         </div>
       </div>
 
-      {showPositionPicker && selectedPlayer && (
-        <PositionPicker
-          player={selectedPlayer}
-          availableSlots={availableSlots}
-          onConfirm={handlePositionConfirm}
-          onCancel={handleCancel}
-        />
-      )}
+
 
       {showChemModal && (
         <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">

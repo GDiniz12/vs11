@@ -71,10 +71,13 @@ export function calculateTeamStrength(players: Player[], manager?: import("@/typ
   if (players.length === 0) return 80;
   let total = players.reduce((sum, p) => sum + p.overall, 0);
   
+  // Bônus Lendas: Jogadores >= 91 aumentam a média em +1 OVR cada um
+  let legendsCount = players.filter(p => p.overall >= 91).length;
+  
   if (manager && manager.overall) {
     total += manager.overall;
-    return total / (players.length + 1);
+    return (total / (players.length + 1)) + legendsCount;
   }
   
-  return total / players.length;
+  return (total / players.length) + legendsCount;
 }
