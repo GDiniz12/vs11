@@ -88,6 +88,7 @@ export default function DraftPage() {
         strength,
         chemistry,
         tactic,
+        players: userPlayers,
       });
       setHasEmittedComplete(true);
     }

@@ -23,7 +23,7 @@ export default function KnockoutPage() {
     startKnockoutPhase
   } = useGame();
 
-  const [simulationMode, setSimulationMode] = useState<'idle' | 'automatic' | 'accompanied'>('idle');
+  const [simulationMode, setSimulationMode] = useState<'automatic' | 'accompanied'>('accompanied');
   const [tick, setTick] = useState(0);
   const [currentMinute, setCurrentMinute] = useState(0);
   const [penaltyTick, setPenaltyTick] = useState(0);
@@ -50,7 +50,7 @@ export default function KnockoutPage() {
     : 0;
 
   useEffect(() => {
-    if (simulationMode === 'idle' || knockoutRounds.length === 0) return;
+    if (knockoutRounds.length === 0) return;
     
     if (simulationMode === 'automatic') {
       const interval = setInterval(() => {
@@ -186,26 +186,17 @@ export default function KnockoutPage() {
             </p>
           </div>
 
-          {simulationMode === 'idle' && (
-            <Card className="text-center mb-10 border-4 border-white">
-              <h2 className="text-2xl font-black text-[#00183F] uppercase tracking-widest mb-6">
-                ESCOLHA O MODO DE SIMULAÇÃO
-              </h2>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Button variant="primary" onClick={() => setSimulationMode('automatic')} className="w-full sm:w-auto">
-                  SIMULAÇÃO AUTOMÁTICA
-                </Button>
-                <Button variant="outline" onClick={() => setSimulationMode('accompanied')} className="w-full sm:w-auto border-[#00183F] !bg-amber-400 !text-[#00183F] hover:!bg-amber-500 font-black">
-                  SIMULAÇÃO ACOMPANHADA
-                </Button>
-              </div>
-            </Card>
-          )}
-
-          {simulationMode !== 'idle' && (
-            <div className="space-y-6 mb-10">
-
-
+          <div className="space-y-6 mb-10">
+            <div className="flex justify-end mb-4">
+              {!showResults && (
+                <button 
+                  onClick={() => setSimulationMode(simulationMode === 'automatic' ? 'accompanied' : 'automatic')}
+                  className="bg-white text-[#00183F] border-4 border-[#00183F] px-4 py-2 font-black uppercase text-xs md:text-sm hover:bg-amber-400 hover:shadow-[4px_4px_0_0_rgba(0,0,0,0.5)] transition-all"
+                >
+                  Trocar para Simulação {simulationMode === 'automatic' ? 'Acompanhada' : 'Automática'}
+                </button>
+              )}
+            </div>
 
               <AnimatePresence>
                 {knockoutRounds.map((round, idx) => {
@@ -246,7 +237,6 @@ export default function KnockoutPage() {
               </AnimatePresence>
               <div ref={endRef} />
             </div>
-          )}
 
           {showResults && (
             <motion.div
