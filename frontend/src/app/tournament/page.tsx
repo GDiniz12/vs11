@@ -159,7 +159,6 @@ export default function TournamentPage() {
                 <div ref={matchesEndRef} />
               </div>
             </div>
-          )}
 
           {showTable && (
             <motion.div
