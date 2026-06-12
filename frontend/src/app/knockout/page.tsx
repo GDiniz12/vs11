@@ -23,7 +23,7 @@ export default function KnockoutPage() {
     startKnockoutPhase
   } = useGame();
 
-  const [visibleRounds, setVisibleRounds] = useState(0);
+  const [tick, setTick] = useState(0);
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,12 +33,25 @@ export default function KnockoutPage() {
     }
   }, [knockoutRounds.length, startKnockoutPhase, currentRoom]);
 
+  const startTicks = React.useMemo(() => {
+    let currentTick = 0;
+    return knockoutRounds.map((round) => {
+      const start = currentTick;
+      currentTick += round.leg2 ? 3 : 2;
+      return start;
+    });
+  }, [knockoutRounds]);
+
+  const maxTick = startTicks.length > 0 
+    ? startTicks[startTicks.length - 1] + (knockoutRounds[knockoutRounds.length - 1].leg2 ? 3 : 2) 
+    : 0;
+
   useEffect(() => {
     if (knockoutRounds.length === 0) return;
     
     const interval = setInterval(() => {
-      setVisibleRounds((prev) => {
-        if (prev < knockoutRounds.length) {
+      setTick((prev) => {
+        if (prev < maxTick) {
           setTimeout(() => endRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
           return prev + 1;
         }
@@ -48,7 +61,7 @@ export default function KnockoutPage() {
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [knockoutRounds]);
+  }, [knockoutRounds.length, maxTick]);
 
   if (knockoutRounds.length === 0) {
     return (
@@ -60,7 +73,7 @@ export default function KnockoutPage() {
     );
   }
 
-  const showResults = visibleRounds === knockoutRounds.length;
+  const showResults = tick >= maxTick;
 
   const handleContinue = () => {
     setPhase("result");
@@ -86,22 +99,25 @@ export default function KnockoutPage() {
 
           <div className="space-y-6 mb-10">
             <AnimatePresence>
-              {knockoutRounds.slice(0, visibleRounds).map((round, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, x: -30, scale: 0.95 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  transition={{ type: "spring", stiffness: 100 }}
-                >
-                  {/* CORREÇÃO AQUI: Propriedades tick e startTick adicionadas */}
-                  <KnockoutMatch 
-                    roundData={round} 
-                    userTeamName={userTeamName} 
-                    tick={10}
-                    startTick={0}
-                  />
-                </motion.div>
-              ))}
+              {knockoutRounds.map((round, idx) => {
+                const sTick = startTicks[idx];
+                if (tick < sTick) return null;
+                return (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, x: -30, scale: 0.95 }}
+                    animate={{ opacity: 1, x: 0, scale: 1 }}
+                    transition={{ type: "spring", stiffness: 100 }}
+                  >
+                    <KnockoutMatch 
+                      roundData={round} 
+                      userTeamName={userTeamName} 
+                      tick={tick}
+                      startTick={sTick}
+                    />
+                  </motion.div>
+                );
+              })}
             </AnimatePresence>
             <div ref={endRef} />
           </div>
