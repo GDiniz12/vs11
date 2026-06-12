@@ -156,7 +156,7 @@ io.on('connection', (socket) => {
     if (finishedCount === totalPlayers) {
       room.status = 'playing';
       const playersData = room.players.map(p => p.teamData);
-      io.to(roomId).emit('hostStartSimulation', { playersData, hostId: room.host });
+      io.to(roomId).emit('allDraftsComplete', { playersData, hostId: room.host });
     }
   });
 
