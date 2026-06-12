@@ -93,7 +93,7 @@ export default function KnockoutPage() {
           if (currentMinute <= 90) {
             const timer = setTimeout(() => {
               setCurrentMinute(m => m + 1);
-            }, 20000 / 90); // 20 segundos para simular 90 mins
+            }, 10000 / 90); // 10 segundos para simular 90 mins
             return () => clearTimeout(timer);
           } else {
             const timer = setTimeout(() => {
@@ -205,16 +205,7 @@ export default function KnockoutPage() {
           {simulationMode !== 'idle' && (
             <div className="space-y-6 mb-10">
 
-              {simulationMode === 'accompanied' && tick < maxTick && currentMinute > 0 && currentMinute <= 90 && (
-                <div className="mb-4 text-center">
-                  <div className="inline-block bg-white text-[#00183F] border-2 border-[#00183F] px-4 py-2 text-xl font-black font-mono">
-                    {currentMinute}'
-                  </div>
-                  <div className="w-full bg-gray-700 h-2 mt-2 max-w-lg mx-auto">
-                    <div className="bg-amber-400 h-2" style={{ width: `${(currentMinute / 90) * 100}%` }}></div>
-                  </div>
-                </div>
-              )}
+
 
               <AnimatePresence>
                 {knockoutRounds.map((round, idx) => {

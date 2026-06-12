@@ -108,11 +108,20 @@ export default function MatchResultCard({ match, userTeamName, index, stage, cur
   const isDraw = userGoals === oppGoals;
 
   return (
-    <div className="p-0 overflow-hidden bg-white text-[#00183F] border-4 border-[#00183F] shadow-[6px_6px_0_0_rgba(0,0,0,0.8)] flex flex-col mb-4 transition-transform hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[10px_10px_0_0_rgba(0,0,0,0.9)]">
+    <div className="p-0 overflow-hidden bg-white text-[#00183F] border-4 border-[#00183F] shadow-[6px_6px_0_0_rgba(0,0,0,0.8)] flex flex-col mb-4 transition-transform hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[10px_10px_0_0_rgba(0,0,0,0.9)] relative">
       
+      {currentMinute !== undefined && currentMinute <= 90 && (
+        <div className="absolute top-0 left-0 w-full h-1 bg-gray-200 z-10">
+          <div className="h-full bg-amber-400 transition-all duration-300" style={{ width: `${(currentMinute / 90) * 100}%` }} />
+        </div>
+      )}
+
       {stage && (
-        <div className="bg-[#00183F] text-white text-[10px] md:text-xs font-black uppercase px-4 py-1.5 tracking-widest border-b-4 border-[#00183F]">
-          {stage}
+        <div className="bg-[#00183F] text-white text-[10px] md:text-xs font-black uppercase px-4 py-1.5 tracking-widest border-b-4 border-[#00183F] flex justify-between items-center mt-[1px]">
+          <span>{stage}</span>
+          {currentMinute !== undefined && currentMinute <= 90 && (
+            <span className="text-amber-400 font-mono text-sm animate-pulse">{currentMinute}'</span>
+          )}
         </div>
       )}
 

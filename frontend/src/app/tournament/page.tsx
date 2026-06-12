@@ -62,7 +62,7 @@ export default function TournamentPage() {
         if (currentMinute <= 90) {
           const timer = setTimeout(() => {
             setCurrentMinute(m => m + 1);
-          }, 20000 / 90); // 20s per match
+          }, 10000 / 90); // 10s per match
           return () => clearTimeout(timer);
         } else {
           const timer = setTimeout(() => {
@@ -138,16 +138,7 @@ export default function TournamentPage() {
                 {TRANSLATIONS[lang].your_matches}
               </h2>
 
-              {simulationMode === 'accompanied' && visibleMatches < userMatches.length && (
-                <div className="mb-4 text-center">
-                  <div className="inline-block bg-white text-[#00183F] border-2 border-[#00183F] px-4 py-2 text-xl font-black font-mono">
-                    {currentMinute}'
-                  </div>
-                  <div className="w-full bg-gray-700 h-2 mt-2">
-                    <div className="bg-amber-400 h-2" style={{ width: `${(currentMinute / 90) * 100}%` }}></div>
-                  </div>
-                </div>
-              )}
+
 
               <div className="space-y-2">
                 <AnimatePresence>
