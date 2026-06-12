@@ -30,6 +30,7 @@ export default function DraftPage() {
 
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [showPositionPicker, setShowPositionPicker] = useState(false);
+  const [showChemModal, setShowChemModal] = useState(false);
   const [availableSlots, setAvailableSlots] = useState<FormationSlot[]>([]);
   
   const allTeams = useMemo(() => getAllTeams(americans, europeans), []);
@@ -206,6 +207,12 @@ export default function DraftPage() {
           </h1>
           
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowChemModal(true)}
+              className="bg-sky-400 text-[#00183F] font-black uppercase text-[10px] md:text-xs px-2 py-1 md:px-3 md:py-2 border-2 border-[#00183F] shadow-[3px_3px_0_0_rgba(0,0,0,0.5)] hover:-translate-y-[1px] hover:-translate-x-[1px] hover:shadow-[4px_4px_0_0_rgba(0,0,0,0.5)] transition-all"
+            >
+              COMO FUNCIONA O ENTROSAMENTO?
+            </button>
             <div className="flex flex-col items-center bg-white border-4 border-[#00183F] px-3 md:px-4 py-1 shadow-[4px_4px_0_0_rgba(0,0,0,0.5)]">
               <span className="text-[10px] md:text-xs font-black text-gray-500 uppercase">{TRANSLATIONS[lang].round_label}</span>
               <div className="flex items-baseline gap-1">
@@ -390,6 +397,59 @@ export default function DraftPage() {
           onConfirm={handlePositionConfirm}
           onCancel={handleCancel}
         />
+      )}
+
+      {showChemModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#D9D9D9] border-4 border-[#00183F] p-6 max-w-lg w-full text-[#00183F] shadow-[10px_10px_0_0_#0033A0] flex flex-col relative">
+            <button
+              onClick={() => setShowChemModal(false)}
+              className="absolute top-2 right-2 text-2xl font-black text-[#00183F] hover:text-red-600 transition-colors"
+            >
+              ×
+            </button>
+            <h2 className="text-2xl font-black uppercase tracking-tight mb-4">Como funciona o Entrosamento?</h2>
+            
+            <ul className="space-y-3 font-bold text-sm">
+              <li className="flex items-center gap-2">
+                <span className="w-4 h-4 bg-[#22c55e] border border-[#00183F] rounded-full inline-block"></span>
+                <span>100 (Verde): Mesmo time exato e mesmo país</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-4 h-4 bg-[#eab308] border border-[#00183F] rounded-full inline-block"></span>
+                <span>90 (Amarelo): Mesmo time exato, países diferentes</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-4 h-4 bg-[#f97316] border border-[#00183F] rounded-full inline-block"></span>
+                <span>85 (Laranja): Mesmo clube (de anos diferentes) e mesmo país</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-4 h-4 bg-[#3b82f6] border border-[#00183F] rounded-full inline-block"></span>
+                <span>75 (Azul): Apenas mesmo país</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-4 h-4 bg-[#ef4444] border border-[#00183F] rounded-full inline-block"></span>
+                <span>65 (Vermelho): Apenas mesmo clube (de anos diferentes)</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <span className="w-4 h-4 bg-white/60 border border-[#00183F] rounded-full inline-block"></span>
+                <span>40 (Branco): Sem nenhuma ligação óbvia</span>
+              </li>
+            </ul>
+            
+            <div className="mt-4 pt-4 border-t-2 border-[#00183F] border-dashed">
+              <h3 className="font-black uppercase mb-1">Bônus do Treinador</h3>
+              <p className="text-xs font-bold text-gray-700 leading-tight">O técnico gera um bônus <strong className="text-[#00183F] text-sm">GIGANTE</strong> no entrosamento se você tiver jogadores que ele treinou no mesmo clube. Experimente combinar o técnico daquele clube histórico com os jogadores certos e veja a mágica acontecer!</p>
+            </div>
+            
+            <button
+              onClick={() => setShowChemModal(false)}
+              className="mt-6 w-full bg-[#0033A0] text-white border-2 border-[#00183F] py-3 font-black uppercase tracking-widest shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:shadow-[6px_6px_0_0_#00183F] transition-all text-lg"
+            >
+              Entendi
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -64,12 +64,12 @@ export function getLinkChemistry(p1?: Player, p2?: Player): number {
   const sameCountry = p1.nationality === p2.nationality;
 
   if (exactTeam && sameCountry) return 100;
-  if (exactTeam && !sameCountry) return 95; // Era 90
-  if (sameBaseTeam && sameCountry) return 90; // Era 85
-  if (sameCountry) return 85; // Era 75
-  if (sameBaseTeam) return 75; // Era 65
+  if (exactTeam && !sameCountry) return 90;
+  if (sameBaseTeam && sameCountry) return 85;
+  if (sameCountry) return 75;
+  if (sameBaseTeam) return 65;
 
-  return 55; // Era 40
+  return 40; 
 }
 
 export function getLinkColor(chem: number): string {
