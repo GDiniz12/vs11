@@ -179,7 +179,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const startLeaguePhase = useCallback(() => {
     setState((prev) => {
       const userPlayers = prev.slots.filter((s) => s.player).map((s) => s.player!);
-      const userStrength = calculateTeamStrength(userPlayers);
+      const userStrength = calculateTeamStrength(userPlayers, prev.manager);
       const userTeamName = TRANSLATIONS[lang].your_team;
       const userChemistry = calculateTeamChemistry(prev.slots, prev.formation, prev.manager);
 
@@ -210,7 +210,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const startKnockoutPhase = useCallback(() => {
     setState((prev) => {
       const userPlayers = prev.slots.filter((s) => s.player).map((s) => s.player!);
-      const userStrength = calculateTeamStrength(userPlayers);
+      const userStrength = calculateTeamStrength(userPlayers, prev.manager);
       const userChemistry = calculateTeamChemistry(prev.slots, prev.formation, prev.manager);
 
       const rounds = generateKnockoutRounds(prev.leagueTable, prev.userTeamName, userStrength, prev.tactic, prev.difficulty, userChemistry);

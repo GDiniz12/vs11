@@ -74,7 +74,7 @@ export default function DraftPage() {
   useEffect(() => {
     if (isDraftComplete && currentRoom && !hasEmittedComplete) {
       const userPlayers = slots.filter((s) => s.player).map((s) => s.player!);
-      const strength = calculateTeamStrength(userPlayers);
+      const strength = calculateTeamStrength(userPlayers, manager);
       const chemistry = calculateTeamChemistry(slots, formation, manager);
       
       socket?.emit("playerDraftComplete", currentRoom.id, {

@@ -22,6 +22,7 @@ export interface Manager {
   tecnico: string;
   clubeAno: string;
   nacionalidade: string;
+  overall: number;
 }
 
 export interface FormationSlot {

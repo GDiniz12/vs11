@@ -63,21 +63,20 @@ export function getLinkChemistry(p1?: Player, p2?: Player): number {
   const sameBaseTeam = baseTeam1 === baseTeam2;
   const sameCountry = p1.nationality === p2.nationality;
 
-  if (exactTeam && sameCountry) return 100;
-  if (exactTeam && !sameCountry) return 90;
-  if (sameBaseTeam && sameCountry) return 85;
-  if (sameCountry) return 75;
-  if (sameBaseTeam) return 65;
+  if (exactTeam) return 100;
+  if (sameBaseTeam && sameCountry) return 95;
+  if (sameBaseTeam) return 85;
+  if (sameCountry) return 80;
 
-  return 40; 
+  return 55; // Base maior para facilitar links normais
 }
 
 export function getLinkColor(chem: number): string {
-  if (chem >= 100) return "#22c55e"; // Verde
-  if (chem >= 90) return "#eab308";  // Amarelo
-  if (chem >= 85) return "#f97316";  // Laranja
-  if (chem >= 75) return "#3b82f6";  // Azul
-  if (chem >= 65) return "#ef4444";  // Vermelho
+  if (chem >= 95) return "#22c55e"; // Verde
+  if (chem >= 85) return "#eab308";  // Amarelo
+  if (chem >= 75) return "#f97316";  // Laranja
+  if (chem >= 65) return "#3b82f6";  // Azul
+  if (chem >= 50) return "#ef4444";  // Vermelho
   if (chem > 0) return "rgba(255, 255, 255, 0.4)"; // Branco
   return "rgba(255, 255, 255, 0.1)"; 
 }
@@ -98,12 +97,17 @@ export function calculateTeamChemistry(slots: FormationSlot[], formation: Format
   let managerBonus = 0;
   if (manager) {
     const managerEmoji = getCountryEmoji(manager.nacionalidade);
+    const baseTeamManager = manager.clubeAno.split('-').slice(0, -1).join('-');
     slots.forEach(s => {
       if (s.player) {
+        const baseTeamPlayer = s.player.teamKey.split('-').slice(0, -1).join('-');
+        
         if (s.player.teamKey === manager.clubeAno) {
-          managerBonus += 40; // Pontuação extra por treinar o clube/ano
+          managerBonus += 150; // Pontuação gigante por ser do time EXATO do treinador
+        } else if (baseTeamPlayer === baseTeamManager) {
+          managerBonus += 80; // Treinou o mesmo clube mas em ano diferente
         } else if (s.player.nationality === managerEmoji) {
-          managerBonus += 30; // Pontuação extra pela nacionalidade
+          managerBonus += 50; // Mesma nacionalidade do treinador
         }
       }
     });

@@ -67,8 +67,14 @@ export function simulateMatch(
   return { homeGoals, awayGoals };
 }
 
-export function calculateTeamStrength(players: Player[]): number {
+export function calculateTeamStrength(players: Player[], manager?: import("@/types").Manager | null): number {
   if (players.length === 0) return 80;
-  const total = players.reduce((sum, p) => sum + p.overall, 0);
+  let total = players.reduce((sum, p) => sum + p.overall, 0);
+  
+  if (manager && manager.overall) {
+    total += manager.overall;
+    return total / (players.length + 1);
+  }
+  
   return total / players.length;
 }
