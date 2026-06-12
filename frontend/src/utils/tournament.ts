@@ -5,6 +5,17 @@ import { shuffleArray } from './helpers';
 // LÓGICA OFFLINE / MOTOR BASE DE PARTIDAS
 // =========================================================
 
+function poissonRandom(lambda: number): number {
+  const L = Math.exp(-lambda);
+  let k = 0;
+  let p = 1;
+  do {
+    k++;
+    p *= Math.random();
+  } while (p > L);
+  return k - 1;
+}
+
 export function simulateMatch(
   homeStrength: number,
   awayStrength: number,
@@ -16,35 +27,63 @@ export function simulateMatch(
   homeChemistry: number = 0,
   awayChemistry: number = 0
 ) {
-  const hStr = homeStrength + (homeChemistry * 0.1);
-  const aStr = awayStrength + (awayChemistry * 0.1);
+  // Entrosamento (0-100): até +10 de força extra
+  const homeEffectiveStrength = homeStrength + (homeChemistry / 10);
+  const awayEffectiveStrength = awayStrength + (awayChemistry / 10);
 
-  let homeAdvantage = 1.05;
-  let diffMultiplier = 1.0;
+  let hStr = homeEffectiveStrength;
+  let aStr = awayEffectiveStrength;
 
+  // Dificuldade afeta a força do usuário
   if (isHomeUser && !isAwayUser) {
-    if (difficulty === 'easy') diffMultiplier = 1.2;
-    if (difficulty === 'impossible') diffMultiplier = 0.8;
+    if (difficulty === 'easy') hStr += 5;
+    if (difficulty === 'impossible') hStr -= 8;
   } else if (!isHomeUser && isAwayUser) {
-    if (difficulty === 'easy') diffMultiplier = 0.8;
-    if (difficulty === 'impossible') diffMultiplier = 1.2;
+    if (difficulty === 'easy') aStr += 5;
+    if (difficulty === 'impossible') aStr -= 8;
   }
 
-  const hScoreBase = (hStr / 20) * homeAdvantage * (isHomeUser ? diffMultiplier : (isAwayUser ? 1/diffMultiplier : 1));
-  const aScoreBase = (aStr / 20) * (isAwayUser ? diffMultiplier : (isHomeUser ? 1/diffMultiplier : 1));
+  // Diferença de força
+  const diff = hStr - aStr;
+  
+  // Base de gols esperados por time em um jogo equilibrado
+  const BASE_GOALS = 1.3;
+  const HOME_ADVANTAGE = 0.3;
 
-  let hTactical = 1.0;
-  let aTactical = 1.0;
-  if (homeTactic === 'offensive') hTactical = 1.2;
-  if (homeTactic === 'defensive') hTactical = 0.8;
-  if (awayTactic === 'offensive') aTactical = 1.2;
-  if (awayTactic === 'defensive') aTactical = 0.8;
+  // Curva não linear para diferença de força
+  // diff = 10 => factor ~ 0.63
+  // diff = 15 => factor ~ 1.02
+  const powerFactor = Math.sign(diff) * Math.pow(Math.abs(diff), 1.2) * 0.04;
+  
+  const homeExpectedRaw = BASE_GOALS + HOME_ADVANTAGE + powerFactor;
+  const awayExpectedRaw = BASE_GOALS - powerFactor;
 
-  let homeGoals = Math.round(Math.random() * hScoreBase * hTactical);
-  let awayGoals = Math.round(Math.random() * aScoreBase * aTactical);
+  // Garantir mínimos razoáveis de xG
+  let homeExpected = Math.max(0.15, homeExpectedRaw);
+  let awayExpected = Math.max(0.15, awayExpectedRaw);
 
-  homeGoals = Math.min(Math.max(homeGoals, 0), 7);
-  awayGoals = Math.min(Math.max(awayGoals, 0), 7);
+  // Táticas afetam os gols esperados
+  if (homeTactic === 'offensive') {
+    homeExpected *= 1.3;
+    awayExpected *= 1.2;
+  } else if (homeTactic === 'defensive') {
+    homeExpected *= 0.75;
+    awayExpected *= 0.7;
+  }
+
+  if (awayTactic === 'offensive') {
+    awayExpected *= 1.3;
+    homeExpected *= 1.2;
+  } else if (awayTactic === 'defensive') {
+    awayExpected *= 0.75;
+    homeExpected *= 0.7;
+  }
+
+  let homeGoals = poissonRandom(homeExpected);
+  let awayGoals = poissonRandom(awayExpected);
+
+  homeGoals = Math.min(Math.max(homeGoals, 0), 9);
+  awayGoals = Math.min(Math.max(awayGoals, 0), 9);
 
   return { homeGoals, awayGoals };
 }
