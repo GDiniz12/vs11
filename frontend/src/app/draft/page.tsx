@@ -50,6 +50,7 @@ export default function DraftPage() {
   const [allDraftsComplete, setAllDraftsComplete] = useState(false);
   const [finalPlayersData, setFinalPlayersData] = useState<any[]>([]);
   const [roomHostId, setRoomHostId] = useState<string>('');
+  const [roomHostNickname, setRoomHostNickname] = useState<string>('');
 
   useEffect(() => {
     if (draftRound === 0) setRerollsLeft(maxRerolls);
@@ -100,10 +101,11 @@ export default function DraftPage() {
 
     const onDraftProgress = (data: any) => setOnlineProgress(data);
     
-    const onAllDraftsComplete = (data: { playersData: any[], hostId: string }) => {
+    const onAllDraftsComplete = (data: { playersData: any[], hostId: string, hostNickname?: string }) => {
       setAllDraftsComplete(true);
       setFinalPlayersData(data.playersData);
       setRoomHostId(data.hostId);
+      if (data.hostNickname) setRoomHostNickname(data.hostNickname);
     };
 
     const onOnlineTournamentReady = (data: any) => {
@@ -259,7 +261,7 @@ export default function DraftPage() {
               {currentRoom ? (
                 <div className="mt-6 flex flex-col items-center">
                   {allDraftsComplete ? (
-                    (currentRoom.host === socket?.id || roomHostId === socket?.id) ? (
+                    (currentRoom.host === socket?.id || roomHostId === socket?.id || currentRoom.hostNickname === nickname || roomHostNickname === nickname) ? (
                       <button
                         onClick={handleHostStartSimulation}
                         className="w-full px-8 py-5 bg-[#D9D9D9] text-[#00183F] border-4 border-[#00183F] font-black text-2xl uppercase tracking-widest transition-all duration-75 shadow-[6px_6px_0_0_#0033A0] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[10px_10px_0_0_#0033A0] active:translate-y-2 active:translate-x-2 active:shadow-none"

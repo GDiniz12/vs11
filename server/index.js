@@ -48,6 +48,7 @@ io.on('connection', (socket) => {
       id: roomId,
       name: data.roomName || `Sala de ${data.nickname}`,
       host: socket.id,
+      hostNickname: data.nickname,
       mode: data.mode,
       draftMode: data.mode === 'tradicional' ? (data.draftMode || 'classic') : 'classic',
       difficulty: data.mode === 'tradicional' ? (data.difficulty || 'medium') : 'medium',
@@ -124,6 +125,7 @@ io.on('connection', (socket) => {
     // Se o jogador antigo era o host, atualiza o host
     if (room.host === oldId) {
       room.host = socket.id;
+      room.hostNickname = nickname;
     }
 
     // Salva dados no socket para futuras reconexões
@@ -177,7 +179,10 @@ io.on('connection', (socket) => {
 
         if (room.players.length === 0) delete rooms[roomId];
         else {
-          if (room.host === socket.id) room.host = room.players[0].id;
+          if (room.host === socket.id) {
+            room.host = room.players[0].id;
+            room.hostNickname = room.players[0].nickname;
+          }
           io.to(roomId).emit('roomUpdated', getSafeRoom(room));
         }
         emitAvailableRooms();
@@ -223,7 +228,7 @@ io.on('connection', (socket) => {
     if (finishedCount === totalPlayers) {
       room.status = 'playing';
       const playersData = room.players.map(p => p.teamData);
-      io.to(roomId).emit('allDraftsComplete', { playersData, hostId: room.host });
+      io.to(roomId).emit('allDraftsComplete', { playersData, hostId: room.host, hostNickname: room.hostNickname });
     }
   });
 
@@ -266,7 +271,10 @@ io.on('connection', (socket) => {
       if (currentRoom.players.length === 0) {
         delete rooms[roomId];
       } else {
-        if (currentRoom.host === socket.id) currentRoom.host = currentRoom.players[0].id;
+        if (currentRoom.host === socket.id) {
+          currentRoom.host = currentRoom.players[0].id;
+          currentRoom.hostNickname = currentRoom.players[0].nickname;
+        }
         io.to(roomId).emit('roomUpdated', getSafeRoom(currentRoom));
       }
       emitAvailableRooms();
