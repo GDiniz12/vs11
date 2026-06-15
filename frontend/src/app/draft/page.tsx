@@ -563,7 +563,7 @@ export default function DraftPage() {
             
             <div className="mt-4 pt-4 border-t-2 border-[#00183F] border-dashed">
               <h3 className="font-black uppercase mb-1">Bônus do Treinador</h3>
-              <p className="text-xs font-bold text-gray-700 leading-tight">O técnico gera um bônus <strong className="text-[#00183F] text-sm">GIGANTE</strong> no entrosamento se você tiver jogadores que ele treinou no mesmo clube. Experimente combinar o técnico daquele clube histórico com os jogadores certos e veja a mágica acontecer!</p>
+              <p className="text-xs font-bold text-[#00183F] leading-tight">O técnico gera um bônus <strong className="text-[#0033A0] text-sm">GIGANTE</strong> no entrosamento se você tiver jogadores que ele treinou no mesmo clube. Experimente combinar o técnico daquele clube histórico com os jogadores certos e veja a mágica acontecer!</p>
             </div>
             
             <button
