@@ -237,6 +237,23 @@ io.on('connection', (socket) => {
     }
   });
 
+  socket.on('sendChatMessage', (roomId, text) => {
+    const room = rooms[roomId];
+    if (!room) return;
+    
+    const player = room.players.find(p => p.id === socket.id);
+    const senderName = player ? player.nickname : (socket._nickname || "Anônimo");
+
+    const messageObj = {
+      id: Date.now() + Math.random().toString(),
+      sender: senderName,
+      text: text,
+      timestamp: new Date().toISOString()
+    };
+
+    io.to(roomId).emit('chatMessage', messageObj);
+  });
+
   socket.on('onlineTournamentData', (roomId, data) => {
     io.to(roomId).emit('onlineTournamentReady', data);
   });

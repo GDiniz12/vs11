@@ -11,6 +11,10 @@ export default function LobbyPage() {
   
   const { socket, currentRoom, setCurrentRoom, nickname, setNickname, saveSession, clearSession } = useSocket();
   const [errorMsg, setErrorMsg] = useState("");
+
+  const [messages, setMessages] = useState<{id: string, sender: string, text: string, timestamp: string}[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
   
   // Estados para o acesso via Link Direto
   const [showJoinForm, setShowJoinForm] = useState(false);
@@ -54,23 +58,40 @@ export default function LobbyPage() {
       router.push("/online");
     };
 
+    const onChatMessage = (msg: any) => {
+      setMessages((prev) => [...prev, msg]);
+    };
+
     socket.on("roomUpdated", onRoomUpdated);
     socket.on("gameStarted", onGameStarted);
     socket.on("roomCancelled", onRoomCancelled);
+    socket.on("chatMessage", onChatMessage);
 
     return () => {
       socket.off("connect", fetchRoomData);
       socket.off("roomUpdated", onRoomUpdated);
       socket.off("gameStarted", onGameStarted);
       socket.off("roomCancelled", onRoomCancelled);
+      socket.off("chatMessage", onChatMessage);
     };
   }, [socket, router, roomId, setCurrentRoom]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleStartGame = () => {
     setErrorMsg("");
     socket?.emit("startGame", roomId, (res: any) => {
       if (!res.success) setErrorMsg(res.message);
     });
+  };
+
+  const handleSendChat = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+    socket?.emit("sendChatMessage", roomId, chatInput.trim());
+    setChatInput("");
   };
 
   const handleCopyLink = () => {
@@ -177,87 +198,143 @@ export default function LobbyPage() {
   const isHost = currentRoom.host === socket.id;
 
   return (
-    <div className="min-h-screen bg-[#00183F] p-6 text-white font-sans flex flex-col items-center">
-      <div className="w-full max-w-4xl bg-[#D9D9D9] p-8 border-4 border-[#00183F] shadow-[10px_10px_0_0_#0033A0]">
+    <div className="min-h-screen bg-[#00183F] p-4 md:p-6 text-white font-sans flex flex-col items-center">
+      <div className="w-full max-w-7xl flex flex-col lg:flex-row gap-6">
         
-        {/* Cabeçalho da Sala */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b-4 border-[#00183F] pb-4 gap-4">
-          <h1 className="text-4xl font-black uppercase text-[#00183F]">{currentRoom.name}</h1>
-          <div className="flex flex-wrap gap-2">
-            <div className="bg-[#00183F] text-white px-4 py-2 text-sm font-bold uppercase flex items-center">
-              ID: {currentRoom.id}
+        {/* COLUNA ESQUERDA: INFOS DA SALA */}
+        <div className="w-full lg:w-2/3 bg-[#D9D9D9] p-6 md:p-8 border-4 border-[#00183F] shadow-[10px_10px_0_0_#0033A0] flex flex-col h-[85vh]">
+          {/* Cabeçalho da Sala */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 border-b-4 border-[#00183F] pb-4 gap-4">
+            <h1 className="text-3xl md:text-4xl font-black uppercase text-[#00183F] truncate max-w-full">{currentRoom.name}</h1>
+            <div className="flex flex-wrap gap-2">
+              <div className="bg-[#00183F] text-white px-4 py-2 text-sm font-bold uppercase flex items-center">
+                ID: {currentRoom.id}
+              </div>
+              <button 
+                onClick={handleCopyLink}
+                className="bg-amber-400 text-[#00183F] px-4 py-2 text-sm font-black uppercase border-2 border-[#00183F] hover:-translate-y-1 hover:-translate-x-1 shadow-[2px_2px_0_0_#00183F] transition-transform"
+              >
+                Copiar Link
+              </button>
             </div>
-            <button 
-              onClick={handleCopyLink}
-              className="bg-amber-400 text-[#00183F] px-4 py-2 text-sm font-black uppercase border-2 border-[#00183F] hover:-translate-y-1 hover:-translate-x-1 shadow-[2px_2px_0_0_#00183F] transition-transform"
-            >
-              Copiar Link
-            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto pr-2">
+            {/* Informações Globais da Sala */}
+            <div className="flex flex-wrap justify-between items-center mb-8 bg-white p-4 border-2 border-[#00183F] gap-4">
+              <p className="text-[#00183F] font-bold uppercase">Modo: <span className="font-black text-amber-500">{currentRoom.mode}</span></p>
+              
+              {currentRoom.mode === 'tradicional' && (
+                <>
+                  <p className="text-[#00183F] font-bold uppercase text-xs md:text-base">
+                    Draft: <span className="font-black text-rose-600">{currentRoom.draftMode === 'hardcore' ? 'Hardcore' : 'Clássico'}</span>
+                  </p>
+                  <p className="text-[#00183F] font-bold uppercase text-xs md:text-base">
+                    Dif: <span className="font-black text-blue-600">{currentRoom.difficulty === 'impossible' ? 'Impossível' : currentRoom.difficulty === 'easy' ? 'Fácil' : 'Médio'}</span>
+                  </p>
+                </>
+              )}
+
+              <p className="text-[#00183F] font-bold uppercase">Jogadores: <span className="font-black">{currentRoom.players.length}/8</span></p>
+            </div>
+
+            {/* Lista de Jogadores */}
+            <h2 className="text-xl md:text-2xl font-black uppercase text-[#00183F] mb-4">Jogadores na Sala</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
+              {currentRoom.players.map((player: any) => (
+                <div key={player.id} className="bg-white border-4 border-[#00183F] p-4 flex items-center justify-between">
+                  <span className="text-[#00183F] font-black uppercase text-lg md:text-xl truncate mr-2">{player.nickname}</span>
+                  {player.id === currentRoom.host && <span className="bg-amber-400 text-[#00183F] text-xs font-bold px-2 py-1 uppercase border-2 border-[#00183F]">Host</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Mensagens de Erro e Botões */}
+          <div className="mt-auto pt-4 border-t-4 border-[#00183F]">
+            {errorMsg && <div className="bg-rose-500 text-white p-4 font-bold uppercase text-center mb-4 border-4 border-[#00183F]">{errorMsg}</div>}
+            
+            <div className="flex flex-col sm:flex-row gap-4">
+              {isHost ? (
+                <>
+                  <button 
+                    onClick={handleCancelRoom}
+                    className="w-full sm:w-1/3 bg-rose-600 text-white py-3 md:py-4 font-black uppercase text-lg md:text-xl border-4 border-[#00183F] shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 transition-transform"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={handleStartGame}
+                    className="w-full sm:w-2/3 bg-emerald-500 text-[#00183F] py-3 md:py-4 font-black uppercase text-xl md:text-2xl border-4 border-[#00183F] shadow-[6px_6px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 transition-transform"
+                  >
+                    Iniciar Jogo
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button 
+                    onClick={handleLeaveRoom}
+                    className="w-full sm:w-1/3 bg-rose-600 text-white py-3 md:py-4 font-black uppercase text-lg md:text-xl border-4 border-[#00183F] shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 transition-transform"
+                  >
+                    Sair
+                  </button>
+                  <div className="w-full sm:w-2/3 bg-gray-300 text-gray-600 py-3 md:py-4 font-black uppercase text-lg md:text-xl text-center border-4 border-gray-400 flex items-center justify-center">
+                    Aguardando Host...
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Informações Globais da Sala (Dinâmico para Tradicional x Guerra) */}
-        <div className="flex flex-wrap justify-between items-center mb-8 bg-white p-4 border-2 border-[#00183F] gap-4">
-          <p className="text-[#00183F] font-bold uppercase">Modo: <span className="font-black text-amber-500">{currentRoom.mode}</span></p>
+        {/* COLUNA DIREITA: CHAT (Glassmorphism + Neon Vibes) */}
+        <div className="w-full lg:w-1/3 h-[50vh] lg:h-[85vh] flex flex-col bg-white/10 backdrop-blur-md border-4 border-white/20 shadow-[0_8px_32px_0_rgba(0,24,63,0.37)]">
+          <div className="bg-[#00183F]/80 p-4 border-b-4 border-white/20">
+            <h2 className="text-xl font-black uppercase tracking-widest text-white text-center">Chat Global</h2>
+          </div>
           
-          {currentRoom.mode === 'tradicional' && (
-            <>
-              <p className="text-[#00183F] font-bold uppercase text-xs md:text-base">
-                Draft: <span className="font-black text-rose-600">{currentRoom.draftMode === 'hardcore' ? 'Hardcore' : 'Clássico'}</span>
-              </p>
-              <p className="text-[#00183F] font-bold uppercase text-xs md:text-base">
-                Dif: <span className="font-black text-blue-600">{currentRoom.difficulty === 'impossible' ? 'Impossível' : currentRoom.difficulty === 'easy' ? 'Fácil' : 'Médio'}</span>
-              </p>
-            </>
-          )}
-
-          <p className="text-[#00183F] font-bold uppercase">Jogadores: <span className="font-black">{currentRoom.players.length}/8</span></p>
-        </div>
-
-        {/* Lista de Jogadores */}
-        <h2 className="text-2xl font-black uppercase text-[#00183F] mb-4">Jogadores na Sala</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-          {currentRoom.players.map((player: any) => (
-            <div key={player.id} className="bg-white border-4 border-[#00183F] p-4 flex items-center justify-between">
-              <span className="text-[#00183F] font-black uppercase text-xl">{player.nickname}</span>
-              {player.id === currentRoom.host && <span className="bg-amber-400 text-[#00183F] text-xs font-bold px-2 py-1 uppercase border-2 border-[#00183F]">Host</span>}
-            </div>
-          ))}
-        </div>
-
-        {/* Mensagens de Erro */}
-        {errorMsg && <div className="bg-rose-500 text-white p-4 font-bold uppercase text-center mb-6 border-4 border-[#00183F]">{errorMsg}</div>}
-
-        {/* Botões de Ação */}
-        <div className="flex flex-col sm:flex-row gap-4 mt-8">
-          {isHost ? (
-            <>
-              <button 
-                onClick={handleCancelRoom}
-                className="w-full sm:w-1/3 bg-rose-600 text-white py-4 font-black uppercase text-xl border-4 border-[#00183F] shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 transition-transform"
-              >
-                Cancelar Sala
-              </button>
-              <button 
-                onClick={handleStartGame}
-                className="w-full sm:w-2/3 bg-emerald-500 text-[#00183F] py-4 font-black uppercase text-2xl border-4 border-[#00183F] shadow-[6px_6px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 transition-transform"
-              >
-                Iniciar Jogo
-              </button>
-            </>
-          ) : (
-            <>
-              <button 
-                onClick={handleLeaveRoom}
-                className="w-full sm:w-1/3 bg-rose-600 text-white py-4 font-black uppercase text-xl border-4 border-[#00183F] shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 transition-transform"
-              >
-                Sair da Sala
-              </button>
-              <div className="w-full sm:w-2/3 bg-gray-300 text-gray-600 py-4 font-black uppercase text-xl text-center border-4 border-gray-400 flex items-center justify-center">
-                Aguardando Host...
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {messages.length === 0 ? (
+              <div className="h-full flex items-center justify-center text-white/50 font-bold uppercase text-sm text-center">
+                Seja o primeiro a mandar uma mensagem!
               </div>
-            </>
-          )}
+            ) : (
+              messages.map(msg => {
+                const isMe = msg.sender === nickname;
+                return (
+                  <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                    <span className="text-[10px] font-black uppercase text-white/70 mb-1">{msg.sender}</span>
+                    <div className={`px-4 py-2 max-w-[85%] break-words font-medium text-sm border-2 ${
+                      isMe 
+                        ? 'bg-sky-500/80 border-sky-300 text-white rounded-l-xl rounded-tr-xl' 
+                        : 'bg-white/20 border-white/40 text-white rounded-r-xl rounded-tl-xl'
+                    }`}>
+                      {msg.text}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          <form onSubmit={handleSendChat} className="p-4 bg-[#00183F]/60 border-t-4 border-white/20 flex gap-2">
+            <input 
+              type="text" 
+              value={chatInput}
+              onChange={e => setChatInput(e.target.value)}
+              placeholder="Digite sua mensagem..." 
+              className="flex-1 bg-white/10 border-2 border-white/30 text-white placeholder-white/50 px-3 py-2 font-bold focus:outline-none focus:border-sky-400 focus:bg-white/20 transition-all"
+              maxLength={100}
+            />
+            <button 
+              type="submit" 
+              disabled={!chatInput.trim()}
+              className="bg-sky-500 text-white px-4 py-2 font-black uppercase border-2 border-sky-300 hover:bg-sky-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Enviar
+            </button>
+          </form>
         </div>
 
       </div>
