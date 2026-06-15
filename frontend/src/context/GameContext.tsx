@@ -43,6 +43,9 @@ interface GameContextType extends GameState {
   setOnlineTournamentState: (data: any, nickname: string) => void;
   resetGame: () => void;
   swapPlayers: (slotId1: number, slotId2: number) => void;
+  undoPick: () => void;
+  canUndo: boolean;
+  clearSave: () => void;
 }
 
 const initialStats: GameStats = { wins: 0, losses: 0, draws: 0, goalsScored: 0, goalsConceded: 0 };
@@ -71,6 +74,55 @@ const GameContext = createContext<GameContextType | null>(null);
 export function GameProvider({ children }: { children: ReactNode }) {
   const { lang } = useLanguage();
   const [state, setState] = useState<GameState>({ ...initialState, userTeamName: TRANSLATIONS[lang].your_team });
+  const [undoStack, setUndoStack] = useState<GameState[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('16a0_save');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed.phase !== 'result') {
+          setState(parsed);
+        }
+      } catch (e) { console.error('Failed to parse save', e); }
+    }
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    if (isLoaded) {
+      if (state.phase === 'home') localStorage.removeItem('16a0_save');
+      else localStorage.setItem('16a0_save', JSON.stringify(state));
+    }
+  }, [state, isLoaded]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (state.phase !== 'home' && state.phase !== 'result') {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [state.phase]);
+
+  const clearSave = useCallback(() => {
+    localStorage.removeItem('16a0_save');
+    setState({ ...initialState, userTeamName: TRANSLATIONS[lang].your_team });
+    setUndoStack([]);
+  }, [lang]);
+
+  const undoPick = useCallback(() => {
+    setUndoStack((prev) => {
+      if (prev.length === 0) return prev;
+      const newStack = [...prev];
+      const prevState = newStack.pop()!;
+      setState(prevState);
+      return newStack;
+    });
+  }, []);
 
   const setFormation = useCallback((f: FormationType) => setState((prev) => ({ ...prev, formation: f, slots: getFormationSlots(f) })), []);
   const setGameMode = useCallback((m: GameMode) => setState((prev) => ({ ...prev, gameMode: m })), []);
@@ -90,6 +142,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const assignPlayerToSlot = useCallback((player: Player, slotId: number) => {
     setState((prev) => {
+      setUndoStack(s => [...s, prev]);
       const newSlots = prev.slots.map((slot) => slot.id === slotId ? { ...slot, player } : slot);
       const newRound = prev.draftRound + 1;
       let nextTeam: TeamData | null = null;
@@ -107,6 +160,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const assignManager = useCallback((manager: Manager) => {
     setState((prev) => {
+      setUndoStack(s => [...s, prev]);
       return { ...prev, manager, draftRound: prev.draftRound + 1, currentDraftManagers: [] };
     });
   }, []);
@@ -268,7 +322,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const resetGame = useCallback(() => setState({ ...initialState, userTeamName: TRANSLATIONS[lang].your_team }), [lang]);
 
   return (
-    <GameContext.Provider value={{ ...state, setFormation, setGameMode, setTactic, setDifficulty, assignPlayerToSlot, assignManager, drawNextTeam, startLeaguePhase, startKnockoutPhase, setPhase, setOnlineTournamentState, resetGame, swapPlayers }}>
+    <GameContext.Provider value={{ ...state, setFormation, setGameMode, setTactic, setDifficulty, assignPlayerToSlot, assignManager, drawNextTeam, startLeaguePhase, startKnockoutPhase, setPhase, setOnlineTournamentState, resetGame, swapPlayers, undoPick, canUndo: undoStack.length > 0, clearSave }}>
       {children}
     </GameContext.Provider>
   );

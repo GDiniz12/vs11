@@ -6,6 +6,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { POSITION_LABELS_MAP } from "@/lib/constants";
 import { useGame } from "@/context/GameContext";
 import { calculateTeamChemistry } from "@/utils/helpers";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface SquadDisplayProps {
   slots: FormationSlot[];
@@ -34,35 +35,40 @@ export default function SquadDisplay({ slots }: SquadDisplayProps) {
       </h3>
       
       <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px] md:max-h-full pr-2">
-        {slots.map((slot) => (
-          <div 
-            key={slot.id} 
-            className="flex items-center border-2 border-[#00183F] bg-[#D9D9D9]/30 p-2"
-          >
-            {/* Tag da Posição */}
-            <div className="bg-[#00183F] text-white w-10 text-center py-1 text-xs font-black">
-              {POSITION_LABELS_MAP[lang][slot.position]}
-            </div>
-            
-            {/* Nome do Jogador + BANDEIRA */}
-            <div className="ml-3 flex-1 font-bold text-sm truncate uppercase text-[#00183F] flex items-center gap-2">
-              {slot.player ? (
-                <>
-                  {slot.player.name} <span className="text-sm">{slot.player.nationality}</span>
-                </>
-              ) : (
-                <span className="text-gray-400">---</span>
-              )}
-            </div>
-            
-            {/* OVR Destacado */}
-            {slot.player && (
-              <div className="ml-2 font-black text-lg bg-white border-2 border-[#00183F] px-2 shadow-[2px_2px_0_0_#00183F]">
-                {slot.player.overall}
+        <AnimatePresence mode="popLayout">
+          {slots.map((slot) => (
+            <motion.div 
+              key={slot.id + "-" + (slot.player?.name || "empty")} 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.2, type: "spring", stiffness: 300, damping: 20 }}
+              className="flex items-center border-2 border-[#00183F] bg-[#D9D9D9]/30 p-2"
+            >
+              {/* Tag da Posição */}
+              <div className="bg-[#00183F] text-white w-10 text-center py-1 text-xs font-black">
+                {POSITION_LABELS_MAP[lang][slot.position]}
               </div>
-            )}
-          </div>
-        ))}
+              
+              {/* Nome do Jogador + BANDEIRA */}
+              <div className="ml-3 flex-1 font-bold text-sm truncate uppercase text-[#00183F] flex items-center gap-2">
+                {slot.player ? (
+                  <>
+                    {slot.player.name} <span className="text-sm">{slot.player.nationality}</span>
+                  </>
+                ) : (
+                  <span className="text-gray-400">---</span>
+                )}
+              </div>
+              
+              {/* OVR Destacado */}
+              {slot.player && (
+                <div className="ml-2 font-black text-lg bg-white border-2 border-[#00183F] px-2 shadow-[2px_2px_0_0_#00183F]">
+                  {slot.player.overall}
+                </div>
+              )}
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -25,7 +25,7 @@ export default function DraftPage() {
   const {
     draftRound, currentDraftTeam, currentDraftManagers, manager,
     assignManager, slots, formation, assignPlayerToSlot, drawNextTeam, gameMode,
-    tactic, setOnlineTournamentState, swapPlayers
+    tactic, setOnlineTournamentState, swapPlayers, undoPick, canUndo
   } = useGame();
 
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
@@ -445,8 +445,8 @@ export default function DraftPage() {
             </>
           ) : (
             <>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between bg-white border-4 border-[#00183F] p-4 shadow-[6px_6px_0_0_#0033A0]">
-                <div className="mb-4 sm:mb-0">
+              <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-4 md:mb-6 gap-4">
+                <div>
                   <h3 className="text-base md:text-lg font-black text-[#00183F] uppercase leading-none">
                     {tDraft.title}
                   </h3>
@@ -454,25 +454,39 @@ export default function DraftPage() {
                     {!hasSelectablePlayers ? tDraft.freeDesc : `${tDraft.chances}: ${rerollsLeft}/${maxRerolls}`}
                   </p>
                 </div>
-
-                <button
-                  onClick={handleReroll}
-                  disabled={isRolling || (rerollsLeft === 0 && hasSelectablePlayers)}
-                  className={`
-                    px-4 md:px-6 py-2 md:py-3 font-black uppercase text-sm md:text-base tracking-widest border-4 border-[#00183F] transition-all duration-75 w-full sm:w-auto
-                    ${
-                      isRolling
-                        ? "bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed shadow-none"
-                        : !hasSelectablePlayers
-                        ? "bg-emerald-400 text-[#00183F] shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#00183F]"
-                        : rerollsLeft > 0
-                        ? "bg-amber-400 text-[#00183F] shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#00183F]"
-                        : "bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed shadow-none"
-                    }
-                  `}
-                >
-                  {isRolling ? tDraft.rolling : (!hasSelectablePlayers ? tDraft.freeReroll : `${tDraft.reroll} (${rerollsLeft})`)}
-                </button>
+                
+                <div className="flex gap-2 w-full sm:w-auto">
+                  {canUndo && (
+                    <button
+                      onClick={undoPick}
+                      disabled={isRolling}
+                      className={`
+                        px-4 py-2 md:py-3 font-black uppercase text-xs md:text-sm tracking-widest border-4 border-[#00183F] transition-all duration-75 flex-1 sm:flex-none
+                        ${isRolling ? "bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed shadow-none" : "bg-rose-500 text-white shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#00183F]"}
+                      `}
+                    >
+                      Desfazer
+                    </button>
+                  )}
+                  <button
+                    onClick={handleReroll}
+                    disabled={isRolling || (rerollsLeft === 0 && hasSelectablePlayers)}
+                    className={`
+                      px-4 md:px-6 py-2 md:py-3 font-black uppercase text-sm md:text-base tracking-widest border-4 border-[#00183F] transition-all duration-75 flex-1 sm:flex-none
+                      ${
+                        isRolling
+                          ? "bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed shadow-none"
+                          : !hasSelectablePlayers
+                          ? "bg-emerald-400 text-[#00183F] shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#00183F]"
+                          : rerollsLeft > 0
+                          ? "bg-amber-400 text-[#00183F] shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#00183F]"
+                          : "bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed shadow-none"
+                      }
+                    `}
+                  >
+                    {isRolling ? tDraft.rolling : (!hasSelectablePlayers ? tDraft.freeReroll : `${tDraft.reroll} (${rerollsLeft})`)}
+                  </button>
+                </div>
               </div>
 
               <AnimatePresence mode="wait">
