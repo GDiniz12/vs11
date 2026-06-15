@@ -93,11 +93,13 @@ export function calculateTeamChemistry(slots: FormationSlot[], formation: Format
     const p2 = slots.find(s => s.id === id2)?.player;
     total += getLinkChemistry(p1, p2);
   });
+  
+  let baseAverage = links.length > 0 ? total / links.length : 0;
 
   // BÔNUS DO TÉCNICO
   let managerBonus = 0;
   if (manager) {
-    managerBonus += 30; // Bônus base por simplesmente ter um treinador
+    managerBonus += 10; // Bônus base direto na média por ter um treinador
     
     const historicManagers = [
       "Pep Guardiola", "Alex Ferguson", "Carlo Ancelotti", "José Mourinho", 
@@ -108,7 +110,7 @@ export function calculateTeamChemistry(slots: FormationSlot[], formation: Format
     // Verificamos se o técnico faz parte dos históricos
     const isHistoric = historicManagers.some(m => manager.tecnico.includes(m) || m.includes(manager.tecnico));
     if (isHistoric) {
-      managerBonus += 120; // Bônus massivo pra técnicos lendários
+      managerBonus += 15; // Bônus direto de +15 na média
     }
 
     const managerEmoji = getCountryEmoji(manager.nacionalidade);
@@ -119,23 +121,23 @@ export function calculateTeamChemistry(slots: FormationSlot[], formation: Format
         const baseTeamPlayer = s.player.teamKey.split('-').slice(0, -1).join('-');
         
         if (s.player.teamKey === manager.clubeAno) {
-          managerBonus += 150; // Pontuação gigante por ser do time EXATO do treinador
+          managerBonus += 12; // +12 na média por CADA jogador do time exato
         } else if (baseTeamPlayer === baseTeamManager) {
-          managerBonus += 80; // Treinou o mesmo clube mas em ano diferente
+          managerBonus += 8; // +8 na média por treinar o clube (outro ano)
         } else if (s.player.nationality === managerEmoji) {
-          managerBonus += 70; // Bônus de nacionalidade (aumentado para 70)
+          managerBonus += 4; // +4 na média por nacionalidade
         }
       }
     });
-  } // <--- Added closing brace
+  }
   
   // BÔNUS PARA JOGADORES LENDAS (OVR >= 91)
   let legendsBonus = 0;
   slots.forEach(s => {
     if (s.player && s.player.overall >= 91) {
-      legendsBonus += 40; // Lendas inspiram a equipe
+      legendsBonus += 2; // +2 direto na média por cada lenda
     }
   });
   
-  return Math.min(Math.floor((total + managerBonus + legendsBonus) / links.length), 100);
+  return Math.min(Math.floor(baseAverage + managerBonus + legendsBonus), 100);
 }

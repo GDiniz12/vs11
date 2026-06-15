@@ -13,11 +13,11 @@ interface SquadDisplayProps {
 
 export default function SquadDisplay({ slots }: SquadDisplayProps) {
   const { lang } = useLanguage();
-  const { formation } = useGame();
+  const { formation, manager } = useGame();
   
   const totalOvr = slots.reduce((sum, slot) => sum + (slot.player ? slot.player.overall : 0), 0);
   const teamOvr = Math.round(totalOvr / 11);
-  const teamChemistry = calculateTeamChemistry(slots, formation);
+  const teamChemistry = calculateTeamChemistry(slots, formation, manager);
   
   return (
     <div className="bg-white text-[#00183F] border-4 border-[#00183F] p-4 shadow-[8px_8px_0_0_rgba(0,0,0,0.5)] h-full">
