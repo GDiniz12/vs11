@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useSocket } from "@/context/SocketContext";
+import { useGame } from "@/context/GameContext";
 
 export default function LobbyPage() {
   const router = useRouter();
@@ -10,6 +11,7 @@ export default function LobbyPage() {
   const roomId = params.id as string;
   
   const { socket, currentRoom, setCurrentRoom, nickname, setNickname, saveSession, clearSession } = useSocket();
+  const { resetGame } = useGame();
   const [errorMsg, setErrorMsg] = useState("");
 
   const [messages, setMessages] = useState<{id: string, sender: string, text: string, timestamp: string}[]>([]);
@@ -54,6 +56,7 @@ export default function LobbyPage() {
     const onGameStarted = () => router.push(`/formation?onlineRoom=${roomId}`);
     const onRoomCancelled = () => {
       clearSession();
+      resetGame();
       alert("O host cancelou esta sala.");
       router.push("/online");
     };
@@ -101,6 +104,7 @@ export default function LobbyPage() {
 
   const handleLeaveRoom = () => {
     clearSession();
+    resetGame();
     socket?.emit("leaveRoom", roomId, () => {
       router.push("/online");
     });
@@ -109,6 +113,7 @@ export default function LobbyPage() {
   const handleCancelRoom = () => {
     if (confirm("Tem certeza que deseja cancelar a sala? Todos serão desconectados.")) {
       clearSession();
+      resetGame();
       socket?.emit("cancelRoom", roomId, () => {
         router.push("/online");
       });

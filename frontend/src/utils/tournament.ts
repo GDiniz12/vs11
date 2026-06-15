@@ -561,17 +561,17 @@ export function generateOnlineTradicional(humanTeams: any[], allBots: any[], dif
 }
 
 export function generateOnlineGuerra(humanTeams: any[]) {
-  const sorted = [...humanTeams].sort((a,b) => (b.strength + b.chemistry/10) - (a.strength + a.chemistry/10));
+  const sorted = [...humanTeams].sort((a, b) => (b.strength + b.chemistry / 10) - (a.strength + a.chemistry / 10));
   const num = sorted.length;
   let roundsData: KnockoutRound[] = [];
 
-  const doMatch = (t1: any, t2: any, roundName: string, isFinal=false) => {
+  const doMatch = (t1: any, t2: any, roundName: string, isFinal = false) => {
      const res1 = simulateMatch(t1.strength, t2.strength, t1.tactic, t2.tactic, true, true, 'medium', t1.chemistry, t2.chemistry, t1.players, t2.players);
      const leg1: MatchResult = { homeTeam: t1.nickname, awayTeam: t2.nickname, homeGoals: res1.homeGoals, awayGoals: res1.awayGoals, events: res1.events };
      let winner, leg2: MatchResult | undefined;
 
-     if(isFinal) {
-        if(res1.homeGoals > res1.awayGoals) winner = t1;
+     if (isFinal) {
+        if (res1.homeGoals > res1.awayGoals) winner = t1;
         else if (res1.awayGoals > res1.homeGoals) winner = t2;
         else {
            const pen = simulatePenalties(t1.players || [], t2.players || []);
@@ -586,8 +586,8 @@ export function generateOnlineGuerra(humanTeams: any[]) {
         leg2 = { homeTeam: t2.nickname, awayTeam: t1.nickname, homeGoals: res2.homeGoals, awayGoals: res2.awayGoals, events: res2.events };
         const agg1 = leg1.homeGoals + leg2.awayGoals;
         const agg2 = leg1.awayGoals + leg2.homeGoals;
-        if(agg1 > agg2) winner = t1;
-        else if(agg2 > agg1) winner = t2;
+        if (agg1 > agg2) winner = t1;
+        else if (agg2 > agg1) winner = t2;
         else {
            const pen = simulatePenalties(t2.players || [], t1.players || []);
            leg2.isPenalties = true;
@@ -600,31 +600,47 @@ export function generateOnlineGuerra(humanTeams: any[]) {
 
      roundsData.push({ round: roundName, leg1, leg2, winner: winner.nickname, userOpponent: t2.nickname, userAdvanced: false });
      return winner;
+  };
+
+  const getRoundName = (n: number) => {
+    if (n === 8) return "Quarter-finals";
+    if (n === 4) return "Semi-finals";
+    if (n === 2) return "Final";
+    return `Round of ${n}`;
+  };
+
+  let nextPower = 2;
+  while (nextPower < num) nextPower *= 2;
+
+  const byes = nextPower - num;
+  let currentRoundTeams = sorted.slice(0, byes);
+  let playersToPlay = sorted.slice(byes);
+
+  if (playersToPlay.length > 0) {
+    let firstRoundWinners = [];
+    const stageName = getRoundName(nextPower);
+    const half = playersToPlay.length / 2;
+    for (let i = 0; i < half; i++) {
+      const t1 = playersToPlay[i];
+      const t2 = playersToPlay[playersToPlay.length - 1 - i];
+      const w = doMatch(t1, t2, stageName, false);
+      firstRoundWinners.push(w);
+    }
+    currentRoundTeams = [...currentRoundTeams, ...firstRoundWinners];
   }
 
-  if (num === 2) {
-     doMatch(sorted[0], sorted[1], "Final", true);
-  }
-  else if (num === 4) {
-     const w1 = doMatch(sorted[0], sorted[3], "Semi-final");
-     const w2 = doMatch(sorted[1], sorted[2], "Semi-final");
-     doMatch(w1, w2, "Final", true);
-  }
-  else if (num === 6) {
-     const w1 = doMatch(sorted[2], sorted[5], "Quarter-final");
-     const w2 = doMatch(sorted[3], sorted[4], "Quarter-final");
-     const s1 = doMatch(sorted[0], w2, "Semi-final");
-     const s2 = doMatch(sorted[1], w1, "Semi-final");
-     doMatch(s1, s2, "Final", true);
-  }
-  else if (num === 8) {
-     const w1 = doMatch(sorted[0], sorted[7], "Quarter-final");
-     const w2 = doMatch(sorted[1], sorted[6], "Quarter-final");
-     const w3 = doMatch(sorted[2], sorted[5], "Quarter-final");
-     const w4 = doMatch(sorted[3], sorted[4], "Quarter-final");
-     const s1 = doMatch(w1, w4, "Semi-final");
-     const s2 = doMatch(w2, w3, "Semi-final");
-     doMatch(s1, s2, "Final", true);
+  while (currentRoundTeams.length > 1) {
+    const stageName = getRoundName(currentRoundTeams.length);
+    const isFinal = currentRoundTeams.length === 2;
+    let nextRoundTeams = [];
+    const half = currentRoundTeams.length / 2;
+    for (let i = 0; i < half; i++) {
+      const t1 = currentRoundTeams[i];
+      const t2 = currentRoundTeams[currentRoundTeams.length - 1 - i];
+      const w = doMatch(t1, t2, stageName, isFinal);
+      nextRoundTeams.push(w);
+    }
+    currentRoundTeams = nextRoundTeams;
   }
 
   return { knockoutRounds: roundsData };

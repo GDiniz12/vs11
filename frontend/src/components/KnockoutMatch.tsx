@@ -224,7 +224,7 @@ export default function KnockoutMatch({ roundData, userTeamName, tick, startTick
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <MatchResultCard 
               match={roundData.leg1} 
-              userTeamName={userTeamName} 
+              userTeamName={displayTeam1} 
               stage={lang === "pt" ? (roundData.leg2 ? "Jogo de Ida" : "Jogo Único") : (roundData.leg2 ? "1st Leg" : "Single Match")} 
               currentMinute={currentMinute1}
               hidePenalties={shouldHidePenaltiesInLegs}
@@ -236,7 +236,7 @@ export default function KnockoutMatch({ roundData, userTeamName, tick, startTick
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <MatchResultCard 
               match={roundData.leg2} 
-              userTeamName={userTeamName} 
+              userTeamName={displayTeam1} 
               stage={lang === "pt" ? "Jogo de Volta" : "2nd Leg"} 
               currentMinute={currentMinute2}
               hidePenalties={shouldHidePenaltiesInLegs}

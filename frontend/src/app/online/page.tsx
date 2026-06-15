@@ -3,10 +3,12 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSocket } from "@/context/SocketContext";
+import { useGame } from "@/context/GameContext";
 
 export default function OnlinePage() {
   const router = useRouter();
   const { socket, setNickname, nickname, setCurrentRoom, saveSession } = useSocket();
+  const { resetGame } = useGame();
   const [activeTab, setActiveTab] = useState<"buscar" | "criar">("buscar");
   const [rooms, setRooms] = useState<any[]>([]);
   
@@ -54,6 +56,7 @@ export default function OnlinePage() {
     // Enviando as novas opções
     socket?.emit("createRoom", { roomName, nickname, mode, draftMode, difficulty, password: hasPassword ? password : null }, (response: any) => {
       if (response.success) {
+        resetGame();
         saveSession(response.roomId);
         router.push(`/lobby/${response.roomId}`);
       }
@@ -69,6 +72,7 @@ export default function OnlinePage() {
 
     socket?.emit("joinRoom", { roomId, nickname, password: joinPassword }, (response: any) => {
       if (response.success) {
+        resetGame();
         saveSession(response.roomId);
         router.push(`/lobby/${response.roomId}`);
       } else {
