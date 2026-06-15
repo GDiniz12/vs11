@@ -58,6 +58,10 @@ export interface MatchResult {
   homePenalties?: number;
   awayPenalties?: number;
   penaltyEvents?: MatchEvent[];
+  stats?: {
+    possession: [number, number];
+    shots: [number, number];
+  };
 }
 
 export interface LeagueTeam {

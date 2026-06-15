@@ -195,7 +195,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const startLeaguePhase = useCallback(() => {
     setState((prev) => {
-      const userPlayers = prev.slots.filter((s) => s.player).map((s) => s.player!);
+      const userPlayers = prev.slots.filter((s) => s.player).map((s) => {
+        const p = { ...s.player! };
+        // Aplica penalidade se escalado fora de posição (exceto goleiros na zaga para não crashar, mas com penalidade)
+        if (!p.positions.includes(s.position)) {
+          p.overall = Math.max(40, p.overall - 12);
+          p.name = p.name + " ⚠️"; // Indicador visual na narração
+        }
+        return p;
+      });
       const userStrength = calculateTeamStrength(userPlayers, prev.manager);
       const userTeamName = TRANSLATIONS[lang].your_team;
       const userChemistry = calculateTeamChemistry(prev.slots, prev.formation, prev.manager);

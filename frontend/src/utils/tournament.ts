@@ -29,12 +29,11 @@ export function simulateMatch(
   homePlayers: any[] = [],
   awayPlayers: any[] = []
 ) {
-  // Entrosamento: Reduzido impacto na média, mas massivo se > 75
   let hChemMod = 0;
   if (homeChemistry > 75) {
-     hChemMod = (homeChemistry - 75) * 0.4; // Ex: 100 chem -> +10 OVR
+     hChemMod = (homeChemistry - 75) * 0.4;
   } else {
-     hChemMod = (homeChemistry - 50) * 0.05; // Impacto minúsculo na base
+     hChemMod = (homeChemistry - 50) * 0.05;
   }
   
   let aChemMod = 0;
@@ -44,54 +43,59 @@ export function simulateMatch(
      aChemMod = (awayChemistry - 50) * 0.05; 
   }
 
-  let hStr = homeStrength + hChemMod;
-  let aStr = awayStrength + aChemMod;
+  const getSector = (players: any[], defaultStr: number) => {
+    if (!players || players.length === 0) return { atk: defaultStr, mid: defaultStr, def: defaultStr, gk: defaultStr };
+    let atk=0, atkC=0, mid=0, midC=0, def=0, defC=0, gk=0, gkC=0;
+    players.slice(0, 11).forEach(p => {
+       const pos = p.positions?.[0] || "MC";
+       if (pos === "GOL") { gk += p.overall; gkC++; }
+       else if (["ZAG", "LD", "LE"].includes(pos)) { def += p.overall; defC++; }
+       else if (["VOL", "MC", "MEI", "ME", "MD"].includes(pos)) { mid += p.overall; midC++; }
+       else { atk += p.overall; atkC++; }
+    });
+    const avg = (t: number, c: number) => c > 0 ? t / c : defaultStr - 5;
+    return { atk: avg(atk, atkC), mid: avg(mid, midC), def: avg(def, defC), gk: avg(gk, gkC) };
+  };
 
-  // Dificuldade afeta a força de forma ESCALONADA (multiplicadores baseados na força original)
+  const hSect = getSector(homePlayers, homeStrength);
+  const aSect = getSector(awayPlayers, awayStrength);
+
+  const applyMods = (sect: any, chemMod: number, mult: number) => ({
+    atk: (sect.atk + chemMod) * mult,
+    mid: (sect.mid + chemMod) * mult,
+    def: (sect.def + chemMod) * mult,
+    gk: (sect.gk + chemMod) * mult
+  });
+  
+  let hMult = 1, aMult = 1;
   if (isHomeUser && !isAwayUser) {
-    if (difficulty === 'easy') {
-      aStr *= 0.85; // Oponente 15% mais fraco
-      hStr *= 1.05; // Usuário 5% mais forte
-    }
-    if (difficulty === 'medium') {
-      aStr *= 1.05; // Oponente levemente mais forte
-    }
-    if (difficulty === 'impossible') {
-      aStr *= 1.12; // Oponente 12% mais forte (escala com a força dele)
-      hStr *= 0.98; // Usuário 2% mais fraco
-    }
+    if (difficulty === 'easy') { aMult = 0.85; hMult = 1.05; }
+    if (difficulty === 'medium') { aMult = 1.05; }
+    if (difficulty === 'impossible') { aMult = 1.12; hMult = 0.98; }
   } else if (!isHomeUser && isAwayUser) {
-    if (difficulty === 'easy') {
-      hStr *= 0.85; 
-      aStr *= 1.05; 
-    }
-    if (difficulty === 'medium') {
-      hStr *= 1.05;
-    }
-    if (difficulty === 'impossible') {
-      hStr *= 1.12;
-      aStr *= 0.98;
-    }
+    if (difficulty === 'easy') { hMult = 0.85; aMult = 1.05; }
+    if (difficulty === 'medium') { hMult = 1.05; }
+    if (difficulty === 'impossible') { hMult = 1.12; aMult = 0.98; }
   }
 
-  // Diferença de força
-  const diff = hStr - aStr;
-  
-  // Base de gols esperados por time em um jogo equilibrado
+  const homeEff = applyMods(hSect, hChemMod, hMult);
+  const awayEff = applyMods(aSect, aChemMod, aMult);
+
+  const midDiff = homeEff.mid - awayEff.mid;
+  const homeMidBonus = Math.max(0, midDiff * 0.2);
+  const awayMidBonus = Math.max(0, -midDiff * 0.2);
+
+  const homeAtkDiff = (homeEff.atk + homeMidBonus) - (awayEff.def * 0.7 + awayEff.gk * 0.3);
+  const awayAtkDiff = (awayEff.atk + awayMidBonus) - (homeEff.def * 0.7 + homeEff.gk * 0.3);
+
   const BASE_GOALS = 1.0;
   const HOME_ADVANTAGE = 0.3;
 
-  // Curva não linear para diferença de força - ajustada para penalizar/recompensar mais
-  const powerFactor = Math.sign(diff) * Math.pow(Math.abs(diff), 1.3) * 0.045;
+  const powerFactor = (diff: number) => Math.sign(diff) * Math.pow(Math.abs(diff), 1.25) * 0.035;
   
-  const homeExpectedRaw = BASE_GOALS + HOME_ADVANTAGE + powerFactor;
-  const awayExpectedRaw = BASE_GOALS - powerFactor;
+  let homeExpected = Math.max(0.15, BASE_GOALS + HOME_ADVANTAGE + powerFactor(homeAtkDiff));
+  let awayExpected = Math.max(0.15, BASE_GOALS + powerFactor(awayAtkDiff));
 
-  // Garantir mínimos razoáveis de xG
-  let homeExpected = Math.max(0.15, homeExpectedRaw);
-  let awayExpected = Math.max(0.15, awayExpectedRaw);
-
-  // Táticas afetam os gols esperados
   if (homeTactic === 'offensive') {
     homeExpected *= 1.3;
     awayExpected *= 1.2;
@@ -122,10 +126,30 @@ export function simulateMatch(
       let playerStr = "Jogador";
       if (players && players.length > 0) {
          let validScorers = players.filter(p => p.name === "Rogério Ceni" || !(p.positions && p.positions.includes("GOL")));
-         if (validScorers.length === 0) validScorers = players; // Fallback se o time só tiver goleiro
+         if (validScorers.length === 0) validScorers = players;
          
-         const scorer = validScorers[Math.floor(Math.random() * validScorers.length)];
-         playerStr = scorer.name;
+         const sumWeights = validScorers.reduce((acc, p) => {
+            let w = 10;
+            if (p.positions) {
+              if (["PE", "PD", "CA"].some((pos: string) => p.positions.includes(pos))) w = 50;
+              else if (["MEI", "MC", "ME", "MD"].some((pos: string) => p.positions.includes(pos))) w = 25;
+            }
+            return acc + w;
+         }, 0);
+         
+         let rand = Math.random() * sumWeights;
+         for (const p of validScorers) {
+            let w = 10;
+            if (p.positions) {
+              if (["PE", "PD", "CA"].some((pos: string) => p.positions.includes(pos))) w = 50;
+              else if (["MEI", "MC", "ME", "MD"].some((pos: string) => p.positions.includes(pos))) w = 25;
+            }
+            if (rand < w) {
+               playerStr = p.name;
+               break;
+            }
+            rand -= w;
+         }
       }
       events.push({ minute, player: playerStr, team, type: "goal" });
     }
@@ -136,7 +160,23 @@ export function simulateMatch(
 
   events.sort((a,b) => a.minute - b.minute);
 
-  return { homeGoals, awayGoals, events };
+  // Compute stats
+  let homePossession = Math.round(50 + midDiff * 0.5);
+  homePossession = Math.max(20, Math.min(80, homePossession)); // Cap at 20-80
+  const awayPossession = 100 - homePossession;
+
+  const homeShots = homeGoals + Math.floor(Math.random() * 6) + Math.max(0, Math.round(homeAtkDiff * 0.3));
+  const awayShots = awayGoals + Math.floor(Math.random() * 6) + Math.max(0, Math.round(awayAtkDiff * 0.3));
+
+  return { 
+    homeGoals, 
+    awayGoals, 
+    events, 
+    stats: { 
+      possession: [homePossession, awayPossession] as [number, number], 
+      shots: [Math.max(homeGoals, homeShots), Math.max(awayGoals, awayShots)] as [number, number] 
+    } 
+  };
 }
 
 function simulatePenalties(homePlayers: any[], awayPlayers: any[]) {
@@ -157,26 +197,32 @@ function simulatePenalties(homePlayers: any[], awayPlayers: any[]) {
     if (!isGK(a) && isGK(b)) return -1;
     return 0;
   });
+
+  const homeGkOvr = homePlayers?.find(isGK)?.overall || 80;
+  const awayGkOvr = awayPlayers?.find(isGK)?.overall || 80;
+
+  const simulateKick = (kicker: any, gkOvr: number) => {
+    const kickerOvr = kicker?.overall || 80;
+    const diff = kickerOvr - gkOvr;
+    const prob = Math.min(0.95, Math.max(0.3, 0.75 + (diff * 0.01)));
+    return Math.random() < prob;
+  };
   
   for(let i=0; i<5; i++){
-     // Home kicks
-     const hScore = Math.random() > 0.25;
+     const kicker = hPlayers.length > 0 ? hPlayers[i % hPlayers.length] : null;
+     const hScore = simulateKick(kicker, awayGkOvr);
      if(hScore) homePen++;
      homeKicks++;
-     let hpStr = "Jogador";
-     if(hPlayers.length > 0) hpStr = hPlayers[i % hPlayers.length].name;
-     events.push({ minute: 120 + events.length, player: hpStr, team: "home", type: hScore ? "penalty_goal" : "penalty_miss" });
+     events.push({ minute: 120 + events.length, player: kicker?.name || "Jogador", team: "home", type: hScore ? "penalty_goal" : "penalty_miss" });
 
      if (homePen > awayPen + (5 - awayKicks)) break;
      if (awayPen > homePen + (5 - homeKicks)) break;
 
-     // Away kicks
-     const aScore = Math.random() > 0.25;
+     const aKicker = aPlayers.length > 0 ? aPlayers[i % aPlayers.length] : null;
+     const aScore = simulateKick(aKicker, homeGkOvr);
      if(aScore) awayPen++;
      awayKicks++;
-     let apStr = "Jogador";
-     if(aPlayers.length > 0) apStr = aPlayers[i % aPlayers.length].name;
-     events.push({ minute: 120 + events.length, player: apStr, team: "away", type: aScore ? "penalty_goal" : "penalty_miss" });
+     events.push({ minute: 120 + events.length, player: aKicker?.name || "Jogador", team: "away", type: aScore ? "penalty_goal" : "penalty_miss" });
 
      if (homePen > awayPen + (5 - awayKicks)) break;
      if (awayPen > homePen + (5 - homeKicks)) break;
@@ -184,24 +230,20 @@ function simulatePenalties(homePlayers: any[], awayPlayers: any[]) {
 
   let currentRound = 5;
   while(homePen === awayPen) {
-     // Home kicks
-     const hScore = Math.random() > 0.25;
+     const kicker = hPlayers.length > 0 ? hPlayers[currentRound % hPlayers.length] : null;
+     const hScore = simulateKick(kicker, awayGkOvr);
      if(hScore) homePen++;
      homeKicks++;
-     let hpStr = "Jogador";
-     if(hPlayers.length > 0) hpStr = hPlayers[currentRound % hPlayers.length].name;
-     events.push({ minute: 120 + events.length, player: hpStr, team: "home", type: hScore ? "penalty_goal" : "penalty_miss" });
+     events.push({ minute: 120 + events.length, player: kicker?.name || "Jogador", team: "home", type: hScore ? "penalty_goal" : "penalty_miss" });
 
-     // Away kicks
-     const aScore = Math.random() > 0.25;
+     const aKicker = aPlayers.length > 0 ? aPlayers[currentRound % aPlayers.length] : null;
+     const aScore = simulateKick(aKicker, homeGkOvr);
      if(aScore) awayPen++;
      awayKicks++;
-     let apStr = "Jogador";
-     if(aPlayers.length > 0) apStr = aPlayers[currentRound % aPlayers.length].name;
-     events.push({ minute: 120 + events.length, player: apStr, team: "away", type: aScore ? "penalty_goal" : "penalty_miss" });
+     events.push({ minute: 120 + events.length, player: aKicker?.name || "Jogador", team: "away", type: aScore ? "penalty_goal" : "penalty_miss" });
      
      currentRound++;
-     if(homePen !== awayPen) break;
+     if(homePen !== awayPen || currentRound > 22) break;
   }
 
   return { homePen, awayPen, penaltyEvents: events };

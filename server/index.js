@@ -81,6 +81,7 @@ io.on('connection', (socket) => {
     if (room.status !== 'waiting') return callback({ success: false, message: 'Jogo já em andamento.' });
     if (room.players.length >= room.maxPlayers) return callback({ success: false, message: 'Sala cheia.' });
     if (room.hasPassword && room.password !== data.password) return callback({ success: false, message: 'Senha incorreta.' });
+    if (room.players.some(p => p.nickname === data.nickname)) return callback({ success: false, message: 'Este nickname já está em uso nesta sala.' });
 
     room.players.push({
       id: socket.id,

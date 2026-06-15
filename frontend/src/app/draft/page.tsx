@@ -82,8 +82,15 @@ export default function DraftPage() {
   // EMITE que terminou
   useEffect(() => {
     if (isDraftComplete && currentRoom && !hasEmittedComplete) {
-      const userPlayers = slots.filter((s) => s.player).map((s) => s.player!);
-      const strength = calculateTeamStrength(userPlayers, manager);
+      const penalizedPlayers = slots.filter((s) => s.player).map((s) => {
+        const p = { ...s.player! };
+        if (!p.positions.includes(s.position)) {
+          p.overall = Math.max(40, p.overall - 12);
+          p.name = p.name + " ⚠️";
+        }
+        return p;
+      });
+      const strength = calculateTeamStrength(penalizedPlayers, manager);
       const chemistry = calculateTeamChemistry(slots, formation, manager);
       
       socket?.emit("playerDraftComplete", currentRoom.id, {
@@ -91,7 +98,7 @@ export default function DraftPage() {
         strength,
         chemistry,
         tactic,
-        players: userPlayers,
+        players: penalizedPlayers,
       });
       setHasEmittedComplete(true);
     }
