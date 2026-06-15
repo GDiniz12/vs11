@@ -10,6 +10,7 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import FootballPitch from "@/components/FootballPitch";
 import TournamentBracket from "@/components/TournamentBracket";
+import { calculateTeamChemistry } from "@/utils/helpers";
 
 export default function ResultPage() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function ResultPage() {
   const { socket, currentRoom, setCurrentRoom, clearSession } = useSocket();
   
   // Lendo as propriedades reais expostas pelo seu GameContext
-  const { slots, stats, isChampion, resetGame, userTeamName, knockoutRounds } = useGame();
+  const { slots, stats, isChampion, resetGame, userTeamName, knockoutRounds, formation, manager } = useGame();
 
   const handleBackToHome = () => {
     // Limpa a sala online (se houver) para não poluir o modo offline
@@ -75,6 +76,9 @@ export default function ResultPage() {
   }
 
   const totalGames = stats.wins + stats.draws + stats.losses;
+  const totalOvr = slots.reduce((sum, slot) => sum + (slot.player ? slot.player.overall : 0), 0);
+  const teamOvr = Math.round(totalOvr / 11) || 0;
+  const teamChemistry = calculateTeamChemistry(slots, formation, manager) || 0;
 
   return (
     <div className="min-h-screen bg-[#00183F] p-4 md:p-12 font-sans text-white">
@@ -145,12 +149,35 @@ export default function ResultPage() {
           transition={{ delay: 0.15, type: "spring" }}
         >
           <Card className="p-6 border-4 border-[#00183F] bg-white shadow-[12px_12px_0_0_#0033A0]">
-            <h2 className="text-xl md:text-2xl font-black uppercase text-[#00183F] tracking-wider mb-6 border-l-8 border-[#0033A0] pl-4">
-              {t.teamTitle} ({userTeamName})
-            </h2>
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 border-b-4 border-[#00183F] pb-4">
+              <h2 className="text-xl md:text-2xl font-black uppercase text-[#00183F] tracking-wider border-l-8 border-[#0033A0] pl-4">
+                {t.teamTitle} ({userTeamName})
+              </h2>
+              <div className="flex items-center gap-2 mt-4 md:mt-0">
+                <span className="bg-[#0033A0] text-white px-3 py-1 font-black text-sm border-2 border-[#00183F] shadow-[2px_2px_0_0_#00183F]">
+                  OVR: {teamOvr}
+                </span>
+                <span className="bg-emerald-600 text-white px-3 py-1 font-black text-sm border-2 border-[#00183F] shadow-[2px_2px_0_0_#00183F]">
+                  ENT: {teamChemistry}
+                </span>
+              </div>
+            </div>
+            
+            {manager && (
+              <div className="mb-4 bg-[#D9D9D9]/50 border-2 border-[#00183F] p-3 flex justify-between items-center text-[#00183F]">
+                <div className="flex flex-col">
+                  <span className="text-[10px] md:text-xs font-black uppercase text-gray-500">Técnico</span>
+                  <span className="font-black text-sm md:text-base uppercase">{manager.tecnico}</span>
+                </div>
+                <div className="text-right flex flex-col">
+                  <span className="text-[10px] md:text-xs font-black uppercase text-gray-500">Nacionalidade</span>
+                  <span className="font-black text-sm md:text-base uppercase">{manager.nacionalidade}</span>
+                </div>
+              </div>
+            )}
             
             <div className="bg-[#1E293B] p-4 border-4 border-[#00183F]">
-              <FootballPitch slots={slots} />
+              <FootballPitch slots={slots} manager={manager} />
             </div>
           </Card>
         </motion.div>
