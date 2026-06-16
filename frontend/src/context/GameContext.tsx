@@ -5,7 +5,7 @@ import { FormationType, FormationSlot, Player, TeamData, GamePhase, LeagueTeam, 
 import { useLanguage } from '@/context/LanguageContext';
 import { TRANSLATIONS } from '@/lib/constants';
 import { getFormationSlots } from '@/utils/formations';
-import { getRandomTeam, getAllTeams, shuffleArray, calculateTeamChemistry } from '@/utils/helpers';
+import { getRandomTeam, getAllTeams, shuffleArray, calculateTeamChemistry, getManagerBonus } from '@/utils/helpers';
 import { calculateTeamStrength } from '@/utils/simulation';
 import { generateLeaguePhase, generateKnockoutRounds } from '@/utils/tournament';
 import { americans, europeans, managersData } from '@/data/data';
@@ -268,7 +268,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const shuffled = shuffleArray(teamEntries).slice(0, 35);
       const allTeams = [{ name: userTeamName, strength: userStrength, players: userPlayers }, ...shuffled];
 
-      const { userMatches, table } = generateLeaguePhase(userTeamName, userStrength, allTeams, prev.tactic, prev.difficulty, userChemistry);
+      const { userMatches, table } = generateLeaguePhase(userTeamName, userStrength, allTeams, prev.tactic, prev.difficulty, userChemistry, getManagerBonus(prev.manager));
 
       const stats: GameStats = { ...initialStats };
       userMatches.forEach((m) => {
@@ -292,7 +292,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const userStrength = calculateTeamStrength(userPlayers, prev.manager);
       const userChemistry = calculateTeamChemistry(prev.slots, prev.formation, prev.manager);
 
-      const rounds = generateKnockoutRounds(prev.leagueTable, prev.userTeamName, userStrength, prev.tactic, prev.difficulty, userChemistry);
+      const rounds = generateKnockoutRounds(prev.leagueTable, prev.userTeamName, userStrength, prev.tactic, prev.difficulty, userChemistry, getManagerBonus(prev.manager));
 
       const newStats = { ...prev.stats };
       rounds.forEach((r) => {
