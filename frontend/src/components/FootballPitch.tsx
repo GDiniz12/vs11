@@ -17,46 +17,21 @@ interface FootballPitchProps {
 export default function FootballPitch({ slots, formation, onSlotClick, highlightedSlots = [], manager }: FootballPitchProps) {
   return (
     <div className="w-full max-w-[420px] mx-auto p-2 relative">
-      <div className="relative w-full rounded-none border-4 border-white shadow-[12px_12px_0_0_rgba(0,0,0,0.7)] overflow-hidden" style={{ paddingBottom: "145%", background: "#135029" }}>
+      <div className="relative w-full rounded-none border-4 border-white shadow-[12px_12px_0_0_rgba(0,0,0,0.7)]" style={{ paddingBottom: "145%", background: "#1A3B2B" }}>
         
-        {/* LISTRAS DO GRAMADO (Stripes verticais) */}
-        <div className="absolute inset-0 pointer-events-none" style={{
-          backgroundImage: "repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0, rgba(255,255,255,0.03) 10%, rgba(0,0,0,0.03) 10%, rgba(0,0,0,0.03) 20%)"
-        }} />
+        {/* Linhas de marcação do campo (Cosmético) */}
+        <div className="absolute top-1/2 left-0 w-full h-1 bg-white/30 -translate-y-1/2 pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 w-20 h-20 md:w-28 md:h-28 border-4 border-white/30 -translate-x-1/2 -translate-y-1/2 transform rotate-45 pointer-events-none" />
+        <div className="absolute top-0 left-1/2 w-[55%] h-[18%] border-b-4 border-l-4 border-r-4 border-white/30 -translate-x-1/2 pointer-events-none" />
+        <div className="absolute bottom-0 left-1/2 w-[55%] h-[18%] border-t-4 border-l-4 border-r-4 border-white/30 -translate-x-1/2 pointer-events-none" />
 
-        {/* Linhas de marcação do campo (Realistas) */}
-        {/* Linha Central */}
-        <div className="absolute top-1/2 left-0 w-full h-[2px] bg-white/40 -translate-y-1/2 pointer-events-none" />
-        {/* Círculo Central */}
-        <div className="absolute top-1/2 left-1/2 w-24 h-24 md:w-32 md:h-32 rounded-full border-[2px] border-white/40 -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
-        {/* Ponto Central */}
-        <div className="absolute top-1/2 left-1/2 w-1.5 h-1.5 bg-white/50 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
-        
-        {/* Área Top */}
-        <div className="absolute top-0 left-1/2 w-[50%] h-[16%] border-b-[2px] border-l-[2px] border-r-[2px] border-white/40 -translate-x-1/2 pointer-events-none" />
-        {/* Pequena Área Top */}
-        <div className="absolute top-0 left-1/2 w-[22%] h-[6%] border-b-[2px] border-l-[2px] border-r-[2px] border-white/40 -translate-x-1/2 pointer-events-none" />
-        {/* Meia Lua Top */}
-        <div className="absolute top-[16%] left-1/2 w-16 h-8 md:w-20 md:h-10 border-b-[2px] border-l-[2px] border-r-[2px] border-white/40 rounded-b-full -translate-x-1/2 pointer-events-none" />
-
-        {/* Área Bottom */}
-        <div className="absolute bottom-0 left-1/2 w-[50%] h-[16%] border-t-[2px] border-l-[2px] border-r-[2px] border-white/40 -translate-x-1/2 pointer-events-none" />
-        {/* Pequena Área Bottom */}
-        <div className="absolute bottom-0 left-1/2 w-[22%] h-[6%] border-t-[2px] border-l-[2px] border-r-[2px] border-white/40 -translate-x-1/2 pointer-events-none" />
-        {/* Meia Lua Bottom */}
-        <div className="absolute bottom-[16%] left-1/2 w-16 h-8 md:w-20 md:h-10 border-t-[2px] border-l-[2px] border-r-[2px] border-white/40 rounded-t-full -translate-x-1/2 pointer-events-none" />
+        {/* LISTRAS DO GRAMADO */}
+        {[...Array(10)].map((_, i) => (
+          <div key={i} className="absolute left-0 right-0 pointer-events-none z-0" style={{ top: `${(i * 100) / 10}%`, height: `${100 / 10}%`, background: i % 2 === 0 ? "rgba(255,255,255,0.015)" : "rgba(0,0,0,0.02)" }} />
+        ))}
 
         {/* LINHAS DE ENTROSAMENTO (CHEMISTRY) */}
         <svg className="absolute inset-0 w-full h-full pointer-events-none z-0">
-          <defs>
-            <filter id="neonGlow" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="3" result="coloredBlur" />
-              <feMerge>
-                <feMergeNode in="coloredBlur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-          </defs>
           {formation && FORMATION_LINKS[formation]?.map(([id1, id2], idx) => {
             const slot1 = slots.find(s => s.id === id1);
             const slot2 = slots.find(s => s.id === id2);
@@ -65,12 +40,7 @@ export default function FootballPitch({ slots, formation, onSlotClick, highlight
             const chem = getLinkChemistry(slot1.player, slot2.player);
             const color = getLinkColor(chem);
             return (
-              <line key={idx} x1={`${slot1.x}%`} y1={`${slot1.y}%`} x2={`${slot2.x}%`} y2={`${slot2.y}%`} 
-                stroke={color} strokeWidth="3" 
-                strokeDasharray={chem === 0 ? "6,6" : "none"} 
-                filter={chem === 2 ? "url(#neonGlow)" : ""}
-                opacity={chem === 0 ? 0.6 : 0.9}
-              />
+              <line key={idx} x1={`${slot1.x}%`} y1={`${slot1.y}%`} x2={`${slot2.x}%`} y2={`${slot2.y}%`} stroke={color} strokeWidth="4" strokeDasharray={chem === 0 ? "4,4" : "none"} />
             );
           })}
         </svg>
