@@ -6,7 +6,9 @@ import { useLanguage } from "@/context/LanguageContext";
 import { POSITION_LABELS_MAP } from "@/lib/constants";
 import { useGame } from "@/context/GameContext";
 import { calculateTeamChemistry } from "@/utils/helpers";
+import { calculateSectorStrengths } from "@/utils/simulation";
 import { motion, AnimatePresence } from "framer-motion";
+import { Player } from "@/types";
 
 interface SquadDisplayProps {
   slots: FormationSlot[];
@@ -19,22 +21,40 @@ export default function SquadDisplay({ slots }: SquadDisplayProps) {
   const totalOvr = slots.reduce((sum, slot) => sum + (slot.player ? slot.player.overall : 0), 0);
   const teamOvr = Math.round(totalOvr / 11);
   const teamChemistry = calculateTeamChemistry(slots, formation, manager);
+  const players = slots.map(s => s.player).filter(Boolean) as Player[];
+  const sectors = calculateSectorStrengths(players);
   
   return (
-    <div className="bg-white text-[#00183F] border-4 border-[#00183F] p-4 shadow-[8px_8px_0_0_rgba(0,0,0,0.5)] h-full">
-      <h3 className="text-xl font-black uppercase tracking-widest border-b-4 border-[#00183F] pb-2 mb-4 flex justify-between items-center gap-2">
-        <span>{lang === "pt" ? "Seu Elenco" : "Your Squad"}</span>
-        <div className="flex gap-2">
-          <span className="text-xs md:text-sm bg-[#0033A0] text-white border-2 border-[#00183F] px-2 py-0.5 shadow-[2px_2px_0_0_#00183F] font-black">
-            OVR: {teamOvr}
-          </span>
-          <span className="text-xs md:text-sm bg-emerald-600 text-white border-2 border-[#00183F] px-2 py-0.5 shadow-[2px_2px_0_0_#00183F] font-black">
-            ENT: {teamChemistry}
-          </span>
+    <div className="bg-white text-[#00183F] border-4 border-[#00183F] p-4 shadow-[8px_8px_0_0_rgba(0,0,0,0.5)] h-full flex flex-col">
+      <div className="border-b-4 border-[#00183F] pb-2 mb-4">
+        <h3 className="text-xl font-black uppercase tracking-widest flex justify-between items-center gap-2 mb-2">
+          <span>{lang === "pt" ? "Seu Elenco" : "Your Squad"}</span>
+          <div className="flex gap-2">
+            <span className="text-xs md:text-sm bg-[#0033A0] text-white border-2 border-[#00183F] px-2 py-0.5 shadow-[2px_2px_0_0_#00183F] font-black" title="Overall">
+              OVR: {teamOvr}
+            </span>
+            <span className="text-xs md:text-sm bg-emerald-600 text-white border-2 border-[#00183F] px-2 py-0.5 shadow-[2px_2px_0_0_#00183F] font-black" title="Entrosamento">
+              ENT: {teamChemistry}
+            </span>
+          </div>
+        </h3>
+        {/* Setores */}
+        <div className="flex justify-between items-center bg-gray-100 border-2 border-[#00183F] p-1 shadow-inner text-xs font-black">
+          <div className="flex items-center gap-1 text-rose-700">
+            <span>ATA:</span> <span className="text-sm">{sectors.atk}</span>
+          </div>
+          <div className="w-px h-4 bg-gray-400" />
+          <div className="flex items-center gap-1 text-emerald-700">
+            <span>MEI:</span> <span className="text-sm">{sectors.mid}</span>
+          </div>
+          <div className="w-px h-4 bg-gray-400" />
+          <div className="flex items-center gap-1 text-blue-700">
+            <span>DEF:</span> <span className="text-sm">{sectors.def}</span>
+          </div>
         </div>
-      </h3>
+      </div>
       
-      <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px] md:max-h-full pr-2">
+      <div className="flex flex-col gap-2 overflow-y-auto max-h-[300px] md:max-h-full pr-2 flex-1">
         <AnimatePresence mode="popLayout">
           {slots.map((slot) => (
             <motion.div 
