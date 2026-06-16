@@ -11,7 +11,7 @@ export default function LobbyPage() {
   const roomId = params.id as string;
   
   const { socket, currentRoom, setCurrentRoom, nickname, setNickname, saveSession, clearSession } = useSocket();
-  const { resetGame } = useGame();
+  const { clearSave } = useGame();
   const [errorMsg, setErrorMsg] = useState("");
 
   const [messages, setMessages] = useState<{id: string, sender: string, text: string, timestamp: string}[]>([]);
@@ -56,7 +56,7 @@ export default function LobbyPage() {
     const onGameStarted = () => router.push(`/formation?onlineRoom=${roomId}`);
     const onRoomCancelled = () => {
       clearSession();
-      resetGame();
+      clearSave();
       alert("O host cancelou esta sala.");
       router.push("/online");
     };
@@ -104,7 +104,7 @@ export default function LobbyPage() {
 
   const handleLeaveRoom = () => {
     clearSession();
-    resetGame();
+    clearSave();
     socket?.emit("leaveRoom", roomId, () => {
       router.push("/online");
     });
@@ -113,7 +113,7 @@ export default function LobbyPage() {
   const handleCancelRoom = () => {
     if (confirm("Tem certeza que deseja cancelar a sala? Todos serão desconectados.")) {
       clearSession();
-      resetGame();
+      clearSave();
       socket?.emit("cancelRoom", roomId, () => {
         router.push("/online");
       });
@@ -126,6 +126,7 @@ export default function LobbyPage() {
 
     socket?.emit("joinRoom", { roomId, nickname: joinNickname, password: joinPassword }, (res: any) => {
       if (res.success) {
+        clearSave();
         setNickname(joinNickname);
         saveSession(roomId);
         setShowJoinForm(false);

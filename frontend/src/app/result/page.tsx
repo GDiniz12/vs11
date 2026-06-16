@@ -17,8 +17,11 @@ export default function ResultPage() {
   const { lang } = useLanguage();
   const { socket, currentRoom, setCurrentRoom, clearSession } = useSocket();
   
-  // Lendo as propriedades reais expostas pelo seu GameContext
-  const { slots, stats, isChampion, resetGame, userTeamName, knockoutRounds, formation, manager } = useGame();
+  const { 
+    slots, userTeamName, phase, 
+    knockoutRounds, stats, isChampion,
+    clearSave, formation, manager
+  } = useGame();
 
   const handleBackToHome = () => {
     // Limpa a sala online (se houver) para não poluir o modo offline
@@ -27,7 +30,7 @@ export default function ResultPage() {
       socket?.emit("leaveRoom", currentRoom.id);
       setCurrentRoom(null);
     }
-    resetGame();
+    clearSave();
     router.push("/");
   };
 
