@@ -1,5 +1,5 @@
 import { LeagueTeam, MatchResult, KnockoutRound, TacticType, DifficultyType, MatchEvent } from '@/types';
-import { shuffleArray } from './helpers';
+import { shuffleArray, calculateBotChemistry } from './helpers';
 
 // =========================================================
 // LÓGICA OFFLINE / MOTOR BASE DE PARTIDAS
@@ -292,8 +292,8 @@ export function generateLeaguePhase(
 
       const hTac = isHomeUser ? userTactic : 'balanced';
       const aTac = isAwayUser ? userTactic : 'balanced';
-      const hChem = isHomeUser ? userChemistry : 100;
-      const aChem = isAwayUser ? userChemistry : 100;
+      const hChem = isHomeUser ? userChemistry : calculateBotChemistry(actualHome.players || []);
+      const aChem = isAwayUser ? userChemistry : calculateBotChemistry(actualAway.players || []);
 
       const { homeGoals, awayGoals, events } = simulateMatch(
         actualHome.strength, actualAway.strength, hTac, aTac, isHomeUser, isAwayUser, difficulty, hChem, aChem, actualHome.players, actualAway.players
@@ -371,8 +371,8 @@ export function generateKnockoutRounds(
 
       const t1Tac = t1.isUser ? userTactic : 'balanced';
       const t2Tac = t2.isUser ? userTactic : 'balanced';
-      const t1Chem = t1.isUser ? userChemistry : 100;
-      const t2Chem = t2.isUser ? userChemistry : 100;
+      const t1Chem = t1.isUser ? userChemistry : calculateBotChemistry(t1.players || []);
+      const t2Chem = t2.isUser ? userChemistry : calculateBotChemistry(t2.players || []);
 
       const res1 = simulateMatch(t1.strength, t2.strength, t1Tac, t2Tac, t1.isUser, t2.isUser, difficulty, t1Chem, t2Chem, t1.players, t2.players);
       const leg1: MatchResult = { homeTeam: t1.name, awayTeam: t2.name, homeGoals: res1.homeGoals, awayGoals: res1.awayGoals, events: res1.events };
@@ -439,7 +439,7 @@ export function generateOnlineTradicional(humanTeams: any[], allBots: any[], dif
   const bots = shuffleArray(allBots).slice(0, botsCount).map(b => ({
     name: b.name, 
     strength: b.players.reduce((s: number, p: any) => s + p.overall, 0) / b.players.length, 
-    isBot: true, tactic: 'balanced' as TacticType, chemistry: 100, players: b.players
+    isBot: true, tactic: 'balanced' as TacticType, chemistry: calculateBotChemistry(b.players), players: b.players
   }));
   
   const humans = humanTeams.map(h => ({

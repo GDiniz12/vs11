@@ -141,3 +141,26 @@ export function calculateTeamChemistry(slots: FormationSlot[], formation: Format
   
   return Math.min(Math.floor(baseAverage + managerBonus + legendsBonus), 100);
 }
+
+export function calculateBotChemistry(players: any[]): number {
+  if (!players || players.length === 0) return 85;
+  
+  let totalLinks = 0;
+  let totalScore = 0;
+  
+  // Simula conexões entre os jogadores titulares (11)
+  const starters = players.slice(0, 11);
+  for (let i = 0; i < starters.length - 1; i++) {
+     totalScore += getLinkChemistry(starters[i], starters[i+1]);
+     totalLinks++;
+  }
+  
+  let legendsBonus = 0;
+  starters.forEach(p => {
+     if (p && p.overall >= 91) legendsBonus += 2;
+  });
+
+  const baseAverage = totalLinks > 0 ? totalScore / totalLinks : 85;
+  // Bots reais recebem um bônus base de +5 para representar o fato de serem um time já montado
+  return Math.min(Math.floor(baseAverage + legendsBonus + 5), 100);
+}
