@@ -1,5 +1,5 @@
 import { LeagueTeam, MatchResult, KnockoutRound, TacticType, DifficultyType, MatchEvent } from '@/types';
-import { shuffleArray, calculateBotChemistry } from './helpers';
+import { shuffleArray, calculateBotChemistry, getManagerBonus } from './helpers';
 
 // =========================================================
 // LÓGICA OFFLINE / MOTOR BASE DE PARTIDAS
@@ -27,7 +27,9 @@ export function simulateMatch(
   homeChemistry: number = 0,
   awayChemistry: number = 0,
   homePlayers: any[] = [],
-  awayPlayers: any[] = []
+  awayPlayers: any[] = [],
+  homeManagerBonus: number = 0,
+  awayManagerBonus: number = 0
 ) {
   let hChemMod = 0;
   if (homeChemistry > 75) {
@@ -70,16 +72,22 @@ export function simulateMatch(
   let hMult = 1, aMult = 1;
   if (isHomeUser && !isAwayUser) {
     if (difficulty === 'easy') { aMult = 0.85; hMult = 1.05; }
-    if (difficulty === 'medium') { aMult = 1.05; }
+    // 'medium' é neutro: não inflamos a força do adversário.
     if (difficulty === 'impossible') { aMult = 1.12; hMult = 0.98; }
   } else if (!isHomeUser && isAwayUser) {
     if (difficulty === 'easy') { hMult = 0.85; aMult = 1.05; }
-    if (difficulty === 'medium') { hMult = 1.05; }
+    // 'medium' é neutro: não inflamos a força do adversário.
     if (difficulty === 'impossible') { hMult = 1.12; aMult = 0.98; }
   }
 
   const homeEff = applyMods(hSect, hChemMod, hMult);
   const awayEff = applyMods(aSect, aChemMod, aMult);
+
+  // Manager tactical bonus: legendary coaches (Guardiola, Ferguson, etc.) add +4 to all sectors.
+  homeEff.atk += homeManagerBonus; homeEff.mid += homeManagerBonus;
+  homeEff.def += homeManagerBonus; homeEff.gk  += homeManagerBonus;
+  awayEff.atk += awayManagerBonus; awayEff.mid += awayManagerBonus;
+  awayEff.def += awayManagerBonus; awayEff.gk  += awayManagerBonus;
 
   const midDiff = homeEff.mid - awayEff.mid;
   const homeMidBonus = Math.max(0, midDiff * 0.2);
@@ -263,7 +271,8 @@ export function generateLeaguePhase(
   allTeams: {name: string, strength: number, players?: any[]}[],
   userTactic: TacticType,
   difficulty: DifficultyType,
-  userChemistry: number
+  userChemistry: number,
+  userManagerBonus: number = 0
 ) {
   const teams = [...allTeams];
   const standings: Record<string, any> = {};
@@ -295,8 +304,10 @@ export function generateLeaguePhase(
       const hChem = isHomeUser ? userChemistry : calculateBotChemistry(actualHome.players || []);
       const aChem = isAwayUser ? userChemistry : calculateBotChemistry(actualAway.players || []);
 
+      const hMgr = isHomeUser ? userManagerBonus : 0;
+      const aMgr = isAwayUser ? userManagerBonus : 0;
       const { homeGoals, awayGoals, events } = simulateMatch(
-        actualHome.strength, actualAway.strength, hTac, aTac, isHomeUser, isAwayUser, difficulty, hChem, aChem, actualHome.players, actualAway.players
+        actualHome.strength, actualAway.strength, hTac, aTac, isHomeUser, isAwayUser, difficulty, hChem, aChem, actualHome.players, actualAway.players, hMgr, aMgr
       );
 
       if (isHomeUser || isAwayUser) {
@@ -350,7 +361,8 @@ export function generateKnockoutRounds(
   userStrength: number,
   userTactic: TacticType,
   difficulty: DifficultyType,
-  userChemistry: number
+  userChemistry: number,
+  userManagerBonus: number = 0
 ) {
   let top16 = leagueTable.slice(0, 16).map(t => ({
     name: t.name, strength: t.avgOverall, isUser: t.name === userTeamName, players: t.players
@@ -373,8 +385,10 @@ export function generateKnockoutRounds(
       const t2Tac = t2.isUser ? userTactic : 'balanced';
       const t1Chem = t1.isUser ? userChemistry : calculateBotChemistry(t1.players || []);
       const t2Chem = t2.isUser ? userChemistry : calculateBotChemistry(t2.players || []);
+      const t1Mgr = t1.isUser ? userManagerBonus : 0;
+      const t2Mgr = t2.isUser ? userManagerBonus : 0;
 
-      const res1 = simulateMatch(t1.strength, t2.strength, t1Tac, t2Tac, t1.isUser, t2.isUser, difficulty, t1Chem, t2Chem, t1.players, t2.players);
+      const res1 = simulateMatch(t1.strength, t2.strength, t1Tac, t2Tac, t1.isUser, t2.isUser, difficulty, t1Chem, t2Chem, t1.players, t2.players, t1Mgr, t2Mgr);
       const leg1: MatchResult = { homeTeam: t1.name, awayTeam: t2.name, homeGoals: res1.homeGoals, awayGoals: res1.awayGoals, events: res1.events };
 
       let winner, leg2: MatchResult | undefined;
@@ -391,7 +405,7 @@ export function generateKnockoutRounds(
             winner = pen.homePen > pen.awayPen ? t1 : t2;
          }
       } else {
-         const res2 = simulateMatch(t2.strength, t1.strength, t2Tac, t1Tac, t2.isUser, t1.isUser, difficulty, t2Chem, t1Chem, t2.players, t1.players);
+         const res2 = simulateMatch(t2.strength, t1.strength, t2Tac, t1Tac, t2.isUser, t1.isUser, difficulty, t2Chem, t1Chem, t2.players, t1.players, t2Mgr, t1Mgr);
          leg2 = { homeTeam: t2.name, awayTeam: t1.name, homeGoals: res2.homeGoals, awayGoals: res2.awayGoals, events: res2.events };
 
          const agg1 = leg1.homeGoals + leg2.awayGoals;

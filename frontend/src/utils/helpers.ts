@@ -161,6 +161,26 @@ export function calculateBotChemistry(players: any[]): number {
   });
 
   const baseAverage = totalLinks > 0 ? totalScore / totalLinks : 85;
-  // Bots reais recebem um bônus base de +5 para representar o fato de serem um time já montado
-  return Math.min(Math.floor(baseAverage + legendsBonus + 5), 100);
+  // Times reais têm boa coesão, mas não máxima: comprimimos e limitamos o entrosamento
+  // dos bots à faixa ~80-90, deixando espaço para que o time montado pelo jogador supere.
+  return Math.min(Math.round(baseAverage * 0.9 + legendsBonus), 90);
+}
+
+const LEGENDARY_MANAGERS = [
+  "Pep Guardiola", "Alex Ferguson", "Carlo Ancelotti", "Zinedine Zidane",
+  "Jürgen Klopp", "José Mourinho", "Arsène Wenger", "Johan Cruyff",
+  "Vicente del Bosque", "Luiz Felipe Scolari", "Mário Zagallo", "Telê Santana",
+];
+
+// Returns a flat bonus (0–4) added to every sector (atk/mid/def/gk) in simulateMatch.
+// Legendary coaches grant +4 (tactically elite), elite overall ≥90 → +3, good ≥85 → +2, any → +1.
+export function getManagerBonus(manager: Manager | null | undefined): number {
+  if (!manager) return 0;
+  const isLegendary = LEGENDARY_MANAGERS.some(
+    m => manager.tecnico.includes(m) || m.includes(manager.tecnico)
+  );
+  if (isLegendary) return 4;
+  if (manager.overall >= 90) return 3;
+  if (manager.overall >= 85) return 2;
+  return 1;
 }
