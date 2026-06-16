@@ -462,7 +462,7 @@ export default function DraftPage() {
                       disabled={isRolling}
                       className={`
                         px-4 py-2 md:py-3 font-black uppercase text-xs md:text-sm tracking-widest border-4 border-[#00183F] transition-all duration-75 flex-1 sm:flex-none
-                        ${isRolling ? "bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed shadow-none" : "bg-white text-rose-600 shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#00183F]"}
+                        ${isRolling ? "bg-gray-300 text-gray-500 opacity-50 cursor-not-allowed shadow-none" : "bg-white text-red-600 shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1 hover:shadow-[6px_6px_0_0_#00183F]"}
                       `}
                     >
                       Desfazer

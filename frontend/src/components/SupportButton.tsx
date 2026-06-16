@@ -17,16 +17,16 @@ export default function SupportButton() {
 
   const t = {
     pt: {
-      btnSupport: "APOIE O 16a0",
+      btnSupport: "APOIE O vs11",
       modalTitle: "Apoie o Projeto!",
-      modalText: "Se você curtiu a experiência, considere apoiar o desenvolvimento do 16a0!",
+      modalText: "Se você curtiu a experiência, considere apoiar o desenvolvimento do vs11!",
       redirectBtn: "Apoiar",
       closeBtn: "Fechar",
     },
     en: {
-      btnSupport: "SUPPORT 16a0",
+      btnSupport: "SUPPORT vs11",
       modalTitle: "Support the Project!",
-      modalText: "If you enjoyed the experience, consider supporting the 16a0 development!",
+      modalText: "If you enjoyed the experience, consider supporting the vs11 development!",
       redirectBtn: "Support",
       closeBtn: "Close",
     }

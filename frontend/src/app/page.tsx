@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
@@ -70,9 +71,14 @@ export default function HomePage() {
           </span>
         </div>
 
-        <h1 className="text-7xl md:text-9xl font-black text-white leading-none tracking-tighter drop-shadow-[8px_8px_0_#0033A0]">
-          16-0
-        </h1>
+        <Image 
+          src="/logo.png" 
+          alt="16a0 Logo" 
+          width={250} 
+          height={100} 
+          className="object-contain scale-150 origin-left mb-4"
+          priority
+        />
         
         <h2 className="text-3xl md:text-4xl font-bold text-white mt-6 border-l-8 border-sage pl-4 uppercase">
           {t.subtitle}

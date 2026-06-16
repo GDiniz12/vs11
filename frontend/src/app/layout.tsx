@@ -10,7 +10,7 @@ import { SocketProvider } from "@/context/SocketContext"; // <-- Importe o Socke
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "16a0 - The Draft Game",
+  title: "vs11",
   description: "Construa seu elenco e conquiste o campeonato.",
 };
 
