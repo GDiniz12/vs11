@@ -61,6 +61,13 @@ export default function LobbyPage() {
       router.push("/online");
     };
 
+    const onKicked = () => {
+      clearSession();
+      clearSave();
+      alert("Você foi removido da sala pelo host.");
+      router.push("/online");
+    };
+
     const onChatMessage = (msg: any) => {
       setMessages((prev) => [...prev, msg]);
     };
@@ -69,6 +76,7 @@ export default function LobbyPage() {
     socket.on("gameStarted", onGameStarted);
     socket.on("roomCancelled", onRoomCancelled);
     socket.on("chatMessage", onChatMessage);
+    socket.on("kicked", onKicked);
 
     return () => {
       socket.off("connect", fetchRoomData);
@@ -76,6 +84,7 @@ export default function LobbyPage() {
       socket.off("gameStarted", onGameStarted);
       socket.off("roomCancelled", onRoomCancelled);
       socket.off("chatMessage", onChatMessage);
+      socket.off("kicked", onKicked);
     };
   }, [socket, router, roomId, setCurrentRoom]);
 
@@ -108,6 +117,10 @@ export default function LobbyPage() {
     socket?.emit("leaveRoom", roomId, () => {
       router.push("/online");
     });
+  };
+
+  const handleKickPlayer = (targetId: string) => {
+    socket?.emit("kickPlayer", { roomId, targetId });
   };
 
   const handleCancelRoom = () => {
@@ -248,9 +261,22 @@ export default function LobbyPage() {
             <h2 className="text-xl md:text-2xl font-black uppercase text-[#00183F] mb-4">Jogadores na Sala</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
               {currentRoom.players.map((player: any) => (
-                <div key={player.id} className="bg-white border-4 border-[#00183F] p-4 flex items-center justify-between">
-                  <span className="text-[#00183F] font-black uppercase text-lg md:text-xl truncate mr-2">{player.nickname}</span>
-                  {player.id === currentRoom.host && <span className="bg-amber-400 text-[#00183F] text-xs font-bold px-2 py-1 uppercase border-2 border-[#00183F]">Host</span>}
+                <div key={player.id} className="bg-white border-4 border-[#00183F] p-4 flex items-center justify-between gap-2">
+                  <span className="text-[#00183F] font-black uppercase text-lg md:text-xl truncate">{player.nickname}</span>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    {player.id === currentRoom.host && (
+                      <span className="bg-amber-400 text-[#00183F] text-xs font-bold px-2 py-1 uppercase border-2 border-[#00183F]">Host</span>
+                    )}
+                    {isHost && player.id !== currentRoom.host && (
+                      <button
+                        onClick={() => handleKickPlayer(player.id)}
+                        className="bg-rose-500 text-white text-xs font-black px-2 py-1 border-2 border-[#00183F] uppercase hover:bg-rose-700 transition-colors"
+                        title="Remover jogador"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

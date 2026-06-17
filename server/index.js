@@ -201,6 +201,30 @@ io.on('connection', (socket) => {
     if(callback) callback({ success: true });
   });
 
+  socket.on('kickPlayer', ({ roomId, targetId }, callback) => {
+    const room = rooms[roomId];
+    if (!room) return callback?.({ success: false, message: 'Sala não encontrada.' });
+    if (room.host !== socket.id) return callback?.({ success: false, message: 'Apenas o host pode remover jogadores.' });
+
+    const idx = room.players.findIndex(p => p.id === targetId);
+    if (idx === -1) return callback?.({ success: false, message: 'Jogador não encontrado.' });
+
+    const kicked = room.players[idx];
+
+    const timerKey = `${kicked.nickname}::${roomId}`;
+    if (disconnectTimers[timerKey]) {
+      clearTimeout(disconnectTimers[timerKey]);
+      delete disconnectTimers[timerKey];
+    }
+
+    room.players.splice(idx, 1);
+
+    io.to(targetId).emit('kicked');
+    io.to(roomId).emit('roomUpdated', getSafeRoom(room));
+    emitAvailableRooms();
+    callback?.({ success: true });
+  });
+
   socket.on('cancelRoom', (roomId, callback) => {
     const room = rooms[roomId];
     if (room && room.host === socket.id) {
