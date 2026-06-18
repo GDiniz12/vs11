@@ -159,6 +159,54 @@ export const americans: RawTeamData = {
     ["Raniele", 81, ["VOL", "ZAG"], "🇧🇷"], ["Breno Bidon", 79, ["MC", "VOL"], "🇧🇷"], ["Rodrigo Garro", 83, ["MEI", "MC"], "🇦🇷"],
     ["Memphis Depay", 84, ["CA", "PE"], "🇳🇱"], ["Yuri Alberto", 81, ["CA"], "🇧🇷"],
   ],
+  "palmeiras-2016": [
+    ["Jailson", 86, ["GOL"], "🇧🇷"], ["Jean", 85, ["LD", "VOL"], "🇧🇷"], ["Yerry Mina", 86, ["ZAG"], "🇨🇴"],
+    ["Vitor Hugo", 85, ["ZAG"], "🇧🇷"], ["Zé Roberto", 84, ["LE", "MC"], "🇧🇷"], ["Thiago Santos", 82, ["VOL"], "🇧🇷"],
+    ["Tchê Tchê", 86, ["MC", "VOL"], "🇧🇷"], ["Moisés", 87, ["MC", "MEI"], "🇧🇷"], ["Dudu", 88, ["PE", "PD"], "🇧🇷"],
+    ["Róger Guedes", 83, ["PD", "PE"], "🇧🇷"], ["Gabriel Jesus", 89, ["CA", "PE"], "🇧🇷"],
+  ],
+  "sao-paulo-2023": [
+    ["Rafael", 84, ["GOL"], "🇧🇷"], ["Rafinha", 83, ["LD"], "🇧🇷"], ["Arboleda", 86, ["ZAG"], "🇪🇨"],
+    ["Beraldo", 84, ["ZAG"], "🇧🇷"], ["Caio Paulista", 83, ["LE", "ME"], "🇧🇷"], ["Pablo Maia", 84, ["VOL", "MC"], "🇧🇷"],
+    ["Alisson", 83, ["MC", "VOL"], "🇧🇷"], ["Rodrigo Nestor", 85, ["MC", "MEI"], "🇧🇷"], ["Wellington Rato", 83, ["MD", "MEI"], "🇧🇷"],
+    ["Lucas Moura", 86, ["PD", "MEI"], "🇧🇷"], ["Calleri", 87, ["CA"], "🇦🇷"],
+  ],
+  "fluminense-2023": [
+    ["Fábio", 86, ["GOL"], "🇧🇷"], ["Samuel Xavier", 83, ["LD"], "🇧🇷"], ["Nino", 86, ["ZAG"], "🇧🇷"],
+    ["Felipe Melo", 83, ["ZAG", "VOL"], "🇧🇷"], ["Marcelo", 87, ["LE", "MEI"], "🇧🇷"], ["André", 88, ["VOL", "MC"], "🇧🇷"],
+    ["Martinelli", 84, ["MC", "VOL"], "🇧🇷"], ["Ganso", 86, ["MEI", "MC"], "🇧🇷"], ["Arias", 88, ["PD", "MEI"], "🇨🇴"],
+    ["Keno", 85, ["PE", "PD"], "🇧🇷"], ["Cano", 89, ["CA"], "🇦🇷"],
+  ],
+  "fluminense-2012": [
+    ["Diego Cavalieri", 87, ["GOL"], "🇧🇷"], ["Bruno", 82, ["LD"], "🇧🇷"], ["Gum", 84, ["ZAG"], "🇧🇷"],
+    ["Leandro Euzébio", 84, ["ZAG"], "🇧🇷"], ["Carlinhos", 84, ["LE", "ME"], "🇧🇷"], ["Edinho", 84, ["VOL"], "🇧🇷"],
+    ["Jean", 86, ["MC", "VOL"], "🇧🇷"], ["Deco", 87, ["MEI", "MC"], "🇵🇹"], ["Thiago Neves", 87, ["MEI", "MC"], "🇧🇷"],
+    ["Wellington Nem", 86, ["PE", "PD"], "🇧🇷"], ["Fred", 90, ["CA"], "🇧🇷"],
+  ],
+  "santos-2002": [
+    ["Fábio Costa", 86, ["GOL"], "🇧🇷"], ["Maurinho", 83, ["LD"], "🇧🇷"], ["Alex", 86, ["ZAG"], "🇧🇷"],
+    ["André Luís", 84, ["ZAG"], "🇧🇷"], ["Léo", 86, ["LE", "ME"], "🇧🇷"], ["Paulo Almeida", 83, ["VOL"], "🇧🇷"],
+    ["Renato", 85, ["MC", "VOL"], "🇧🇷"], ["Elano", 87, ["MC", "MEI"], "🇧🇷"], ["Diego", 89, ["MEI"], "🇧🇷"],
+    ["Robinho", 90, ["PE", "CA"], "🇧🇷"], ["Alberto", 84, ["CA"], "🇧🇷"],
+  ],
+  "athletico-pr-2001": [
+    ["Flávio", 84, ["GOL"], "🇧🇷"], ["Gustavo", 83, ["ZAG", "LD"], "🇧🇷"], ["Nem", 84, ["ZAG"], "🇧🇷"],
+    ["Rogério Corrêa", 83, ["ZAG"], "🇧🇷"], ["Alessandro", 84, ["LD", "MD"], "🇧🇷"], ["Cocito", 83, ["VOL"], "🇧🇷"],
+    ["Kléberson", 87, ["MC", "VOL"], "🇧🇷"], ["Adriano Gabiru", 85, ["MEI", "MC"], "🇧🇷"], ["Fabiano", 84, ["LE", "ME"], "🇧🇷"],
+    ["Kléber Pereira", 86, ["CA"], "🇧🇷"], ["Alex Mineiro", 89, ["CA"], "🇧🇷"],
+  ],
+  "botafogo-2024": [
+    ["John", 85, ["GOL"], "🇧🇷"], ["Vitinho", 83, ["LD"], "🇧🇷"], ["Adryelson", 84, ["ZAG"], "🇧🇷"],
+    ["Alexander Barboza", 85, ["ZAG"], "🇦🇷"], ["Alex Telles", 86, ["LE", "ME"], "🇧🇷"], ["Gregore", 84, ["VOL"], "🇧🇷"],
+    ["Marlon Freitas", 85, ["MC", "VOL"], "🇧🇷"], ["Thiago Almada", 88, ["MEI", "PE"], "🇦🇷"], ["Savarino", 86, ["PD", "MEI"], "🇻🇪"],
+    ["Luiz Henrique", 89, ["PD", "PE"], "🇧🇷"], ["Igor Jesus", 86, ["CA"], "🇧🇷"],
+  ],
+  "atletico-mineiro-2021": [
+    ["Everson", 86, ["GOL"], "🇧🇷"], ["Mariano", 83, ["LD"], "🇧🇷"], ["Nathan Silva", 84, ["ZAG"], "🇧🇷"],
+    ["Junior Alonso", 86, ["ZAG"], "🇵🇾"], ["Guilherme Arana", 88, ["LE", "ME"], "🇧🇷"], ["Allan", 86, ["VOL", "MC"], "🇧🇷"],
+    ["Jair", 85, ["MC", "VOL"], "🇧🇷"], ["Zaracho", 86, ["MC", "MEI"], "🇦🇷"], ["Nacho Fernández", 88, ["MEI", "MC"], "🇦🇷"],
+    ["Keno", 86, ["PE", "PD"], "🇧🇷"], ["Hulk", 90, ["CA", "PD"], "🇧🇷"],
+  ],
 };
 
 export const europeans: RawTeamData = {
@@ -415,6 +463,9 @@ export const clubLogos: Record<string, string> = {
   "penarol": "https://upload.wikimedia.org/wikipedia/commons/6/6c/Escudo-penarol-2015.svg",
   "racing": "https://upload.wikimedia.org/wikipedia/commons/5/56/Escudo_de_Racing_Club_%282014%29.svg",
   "estudiantes": "https://upload.wikimedia.org/wikipedia/commons/b/b2/Estudiantes_de_la_Plata_crest_%282025%29.svg",
+  "fluminense": "https://upload.wikimedia.org/wikipedia/commons/a/a3/Escudo_Fluminense.svg",
+  "botafogo": "https://upload.wikimedia.org/wikipedia/commons/c/c2/Botafogo_de_Futebol_e_Regatas_logo.svg",
+  "athletico-pr": "https://upload.wikimedia.org/wikipedia/commons/b/b3/Club_Athletico_Paranaense_logo.svg",
   
   "psg": "https://upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg",
   "real-madrid": "https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg",
@@ -500,5 +551,13 @@ export const managersData: Manager[] = [
   { "tecnico": "Ottmar Hitzfeld", "clubeAno": "bayern-munich-2000", "nacionalidade": "Alemanha", "overall": 87 },
   { "tecnico": "Pep Guardiola", "clubeAno": "manchester-city-2021", "nacionalidade": "Espanha", "overall": 93 },
   { "tecnico": "Jürgen Klopp", "clubeAno": "borussia-dortmund-2013", "nacionalidade": "Alemanha", "overall": 88 },
-  { "tecnico": "Vincent Kompany", "clubeAno": "bayern-munich-2026", "nacionalidade": "Bélgica", "overall": 83 }
+  { "tecnico": "Vincent Kompany", "clubeAno": "bayern-munich-2026", "nacionalidade": "Bélgica", "overall": 83 },
+  { "tecnico": "Cuca", "clubeAno": "palmeiras-2016", "nacionalidade": "Brasil", "overall": 82 },
+  { "tecnico": "Dorival Júnior", "clubeAno": "sao-paulo-2023", "nacionalidade": "Brasil", "overall": 83 },
+  { "tecnico": "Fernando Diniz", "clubeAno": "fluminense-2023", "nacionalidade": "Brasil", "overall": 84 },
+  { "tecnico": "Abel Braga", "clubeAno": "fluminense-2012", "nacionalidade": "Brasil", "overall": 82 },
+  { "tecnico": "Emerson Leão", "clubeAno": "santos-2002", "nacionalidade": "Brasil", "overall": 81 },
+  { "tecnico": "Geninho", "clubeAno": "athletico-pr-2001", "nacionalidade": "Brasil", "overall": 80 },
+  { "tecnico": "Artur Jorge", "clubeAno": "botafogo-2024", "nacionalidade": "Portugal", "overall": 84 },
+  { "tecnico": "Cuca", "clubeAno": "atletico-mineiro-2021", "nacionalidade": "Brasil", "overall": 83 }
 ];
