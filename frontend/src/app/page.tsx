@@ -69,9 +69,9 @@ export default function HomePage() {
       
       <LanguageSelector />
 
-      {/* Auth area — top right */}
+      {/* Auth area — top left */}
       {!isLoading && (
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-3">
+        <div className="absolute top-4 left-4 z-20 flex items-center gap-3">
           {user ? (
             <>
               <div className="flex flex-col items-end">
