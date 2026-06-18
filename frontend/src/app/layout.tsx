@@ -6,6 +6,7 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import { GameProvider } from "@/context/GameContext";
 import SupportButton from "@/components/SupportButton";
 import { SocketProvider } from "@/context/SocketContext"; // <-- Importe o SocketProvider
+import { AuthProvider } from "@/context/AuthContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,14 +23,16 @@ export default function RootLayout({
   return (
     <html lang="pt-BR">
       <body className={inter.className}>
-        <SocketProvider>
-          <LanguageProvider>
-            <GameProvider>
-              {children}
-              <SupportButton />
-            </GameProvider>
-          </LanguageProvider>
-        </SocketProvider>
+        <AuthProvider>
+          <SocketProvider>
+            <LanguageProvider>
+              <GameProvider>
+                {children}
+                <SupportButton />
+              </GameProvider>
+            </LanguageProvider>
+          </SocketProvider>
+        </AuthProvider>
         <Analytics />
       </body>
     </html>

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import { io, Socket } from "socket.io-client";
+import { useAuth } from "@/context/AuthContext";
 
 interface SocketContextType {
   socket: Socket | null;
@@ -28,6 +29,21 @@ export const SocketProvider = ({ children }: { children: React.ReactNode }) => {
   const [currentRoom, setCurrentRoom] = useState<any>(null);
   const [nickname, setNickname] = useState<string>("");
   const hasAttemptedRejoin = useRef(false);
+  const { user } = useAuth();
+
+  // Pre-fill nickname from logged-in account when no session nickname exists
+  useEffect(() => {
+    if (user) {
+      try {
+        const savedNickname = sessionStorage.getItem("16a0_nickname");
+        if (!savedNickname) {
+          setNickname(user.nickname);
+        }
+      } catch {
+        setNickname(user.nickname);
+      }
+    }
+  }, [user]);
 
   // Persiste o nickname no sessionStorage sempre que mudar
   const handleSetNickname = useCallback((name: string) => {

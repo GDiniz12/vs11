@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 import LanguageSelector from "@/components/LanguageSelector";
 
 const dreamTeam = [
@@ -24,6 +25,7 @@ const dreamTeam = [
 export default function HomePage() {
   const router = useRouter();
   const { lang } = useLanguage();
+  const { user, logout, isLoading } = useAuth();
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -40,7 +42,11 @@ export default function HomePage() {
       description: <>Construa seu elenco dos sonhos draftando as maiores lendas da <span className="text-amber-400 font-bold"> Copa Libertadores</span> e da <span className="text-blue-400 font-bold"> Champions League</span>. Desafie os maiores times da história e conquiste o topo do mundo.</>,
       button: "Jogar Offline",
       buttonOnline: "Jogar Online",
-      footer: "Exemplo de Elenco Supremo"
+      footer: "Exemplo de Elenco Supremo",
+      login: "Entrar",
+      createAccount: "Criar Conta",
+      logout: "Sair",
+      rating: "Rating",
     },
     en: {
       badge: "The Ultimate Simulator",
@@ -48,7 +54,11 @@ export default function HomePage() {
       description: <>Build your dream squad by drafting the greatest legends from the <span className="text-amber-400 font-bold"> Copa Libertadores</span> and the <span className="text-blue-400 font-bold"> Champions League</span>. Challenge history's biggest teams and conquer the top of the world.</>,
       button: "Play Offline",
       buttonOnline: "Play Online",
-      footer: "Supreme Squad Example"
+      footer: "Supreme Squad Example",
+      login: "Login",
+      createAccount: "Sign Up",
+      logout: "Logout",
+      rating: "Rating",
     }
   };
 
@@ -58,6 +68,41 @@ export default function HomePage() {
     <div className="relative min-h-screen bg-[#00183F] flex flex-col lg:flex-row items-center justify-center p-6 lg:p-12 overflow-hidden gap-12 font-sans">
       
       <LanguageSelector />
+
+      {/* Auth area — top right */}
+      {!isLoading && (
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-3">
+          {user ? (
+            <>
+              <div className="flex flex-col items-end">
+                <span className="text-white font-black text-sm uppercase tracking-wider">{user.nickname}</span>
+                <span className="text-gray-400 text-xs">{t.rating}: {user.rating}</span>
+              </div>
+              <button
+                onClick={logout}
+                className="px-3 py-2 bg-transparent border-2 border-white/30 text-gray-300 font-bold text-xs uppercase tracking-wider hover:border-white hover:text-white transition-colors"
+              >
+                {t.logout}
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                onClick={() => router.push("/login")}
+                className="px-4 py-2 bg-transparent border-2 border-white/40 text-white font-bold text-xs uppercase tracking-wider hover:border-white transition-colors"
+              >
+                {t.login}
+              </button>
+              <button
+                onClick={() => router.push("/register")}
+                className="px-4 py-2 bg-emerald-500 border-2 border-emerald-500 text-[#00183F] font-black text-xs uppercase tracking-wider hover:bg-emerald-400 transition-colors"
+              >
+                {t.createAccount}
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       <motion.div
         className="flex-1 w-full max-w-2xl flex flex-col items-start justify-center z-10 pt-12 lg:pt-0"
