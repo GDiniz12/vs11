@@ -14,9 +14,10 @@ export default function OnlinePage() {
   
   const [roomName, setRoomName] = useState("");
   const [mode, setMode] = useState("tradicional");
+  const [tournamentMode, setTournamentMode] = useState("super-mundial");
   const [password, setPassword] = useState("");
   const [hasPassword, setHasPassword] = useState(false);
-  
+
   // NOVO: Opções exclusivas do Modo Tradicional
   const [draftMode, setDraftMode] = useState("classic");
   const [difficulty, setDifficulty] = useState("medium");
@@ -54,7 +55,7 @@ export default function OnlinePage() {
     if (!nickname) return alert("Digite um nickname no topo da página!");
     
     // Enviando as novas opções
-    socket?.emit("createRoom", { roomName, nickname, mode, draftMode, difficulty, password: hasPassword ? password : null }, (response: any) => {
+    socket?.emit("createRoom", { roomName, nickname, mode, tournamentMode, draftMode, difficulty, password: hasPassword ? password : null }, (response: any) => {
       if (response.success) {
         clearSave();
         saveSession(response.roomId);
@@ -142,7 +143,15 @@ export default function OnlinePage() {
                 {rooms.map(room => (
                   <div key={room.id} className="border-4 border-[#00183F] p-4 flex flex-col md:flex-row justify-between items-start md:items-center bg-[#D9D9D9] gap-4">
                     <div>
-                      <h3 className="font-black text-xl uppercase">{room.name} <span className="text-sm bg-[#00183F] text-white px-2 py-1 ml-2">{room.mode}</span></h3>
+                      <h3 className="font-black text-xl uppercase">
+                        {room.name}
+                        <span className="text-sm bg-[#00183F] text-white px-2 py-1 ml-2">{room.mode}</span>
+                        {room.tournamentMode && room.tournamentMode !== 'super-mundial' && (
+                          <span className="text-xs bg-amber-400 text-[#00183F] px-2 py-1 ml-1 font-black uppercase border-2 border-[#00183F]">
+                            { { 'copa-do-mundo': '🌍 Copa', 'brasileirao': '🇧🇷 Brasileirão', 'louco': '🔥 Louco' }[room.tournamentMode as string] }
+                          </span>
+                        )}
+                      </h3>
                       <p className="font-bold text-sm text-gray-600 mt-1">{room.players.length}/{room.maxPlayers} Jogadores {room.hasPassword && '🔒'}</p>
                     </div>
                     
@@ -182,6 +191,32 @@ export default function OnlinePage() {
                 <option value="tradicional">Tradicional (Pontos Corridos + Mata-mata)</option>
                 <option value="guerra">Guerra (Chaveamento Direto PvP)</option>
               </select>
+            </div>
+
+            <div>
+              <label className="block font-black uppercase mb-1">Modo de Torneio</label>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { value: "super-mundial", label: "⚽ Super Mundial", desc: "Clubes do mundo todo" },
+                  { value: "copa-do-mundo", label: "🌍 Copa do Mundo", desc: "Apenas seleções nacionais" },
+                  { value: "brasileirao", label: "🇧🇷 Brasileirão", desc: "Apenas clubes brasileiros" },
+                  { value: "louco", label: "🔥 Louco", desc: "Todos os times, 32 na sorte" },
+                ] as const).map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setTournamentMode(opt.value)}
+                    className={`flex flex-col text-left p-3 border-4 font-bold transition-all duration-75 ${
+                      tournamentMode === opt.value
+                        ? "bg-[#00183F] text-white border-amber-400 shadow-none translate-x-[2px] translate-y-[2px]"
+                        : "bg-gray-50 text-[#00183F] border-[#00183F] shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:-translate-x-1"
+                    }`}
+                  >
+                    <span className="font-black uppercase text-sm">{opt.label}</span>
+                    <span className="text-xs mt-0.5 opacity-70">{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* MODO DE DRAFT (todos os modos) + DIFICULDADE (só Tradicional) */}

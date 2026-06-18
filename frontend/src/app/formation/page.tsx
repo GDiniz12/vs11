@@ -17,23 +17,27 @@ export default function FormationPage() {
   const router = useRouter();
   const { lang } = useLanguage();
   const { currentRoom } = useSocket(); 
-  const { 
-    formation, setFormation, 
-    gameMode, setGameMode, 
+  const {
+    formation, setFormation,
+    gameMode, setGameMode,
     tactic, setTactic,
     difficulty, setDifficulty,
-    slots, drawNextTeam, setPhase 
+    slots, drawNextTeam, setPhase,
+    setTournamentMode,
   } = useGame();
 
   // Sincroniza as regras da sala criadas pelo host para a máquina local do jogador
   useEffect(() => {
     if (currentRoom) {
       setGameMode(currentRoom.draftMode || "classic");
+      if (currentRoom.tournamentMode) {
+        setTournamentMode(currentRoom.tournamentMode);
+      }
       if (currentRoom.mode === 'tradicional') {
         setDifficulty(currentRoom.difficulty || "medium");
       }
     }
-  }, [currentRoom, setGameMode, setDifficulty]);
+  }, [currentRoom, setGameMode, setDifficulty, setTournamentMode]);
 
   const [infoModal, setInfoModal] = React.useState<string | null>(null);
 

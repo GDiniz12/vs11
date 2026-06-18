@@ -54,6 +54,7 @@ io.on('connection', (socket) => {
       host: socket.id,
       hostNickname: cleanNickname,
       mode: data.mode,
+      tournamentMode: data.tournamentMode || 'super-mundial',
       draftMode: data.draftMode || 'classic',
       difficulty: data.mode === 'tradicional' ? (data.difficulty || 'medium') : 'medium',
       hasPassword: !!data.password,
