@@ -5,142 +5,9 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useGame } from "@/context/GameContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { LeagueTeam } from "@/types";
+import LeagueTable from "@/components/LeagueTable";
+import MatchResultCard from "@/components/MatchResultCard";
 
-function StandingsTable({
-  teams,
-  userTeamName,
-}: {
-  teams: LeagueTeam[];
-  userTeamName: string;
-}) {
-  return (
-    <table className="w-full text-xs font-black text-white bg-[#00183F] border-2 border-white/20">
-      <thead>
-        <tr className="bg-white/10 text-white/60 border-b-2 border-white/20">
-          <th className="text-left pl-2 py-2 font-black uppercase w-8">#</th>
-          <th className="text-left py-2 font-black uppercase">Time</th>
-          <th className="py-2 w-8">J</th>
-          <th className="py-2 w-8">V</th>
-          <th className="py-2 w-8">E</th>
-          <th className="py-2 w-8">D</th>
-          <th className="py-2 w-10">GP</th>
-          <th className="py-2 w-10">GC</th>
-          <th className="py-2 w-8">SG</th>
-          <th className="py-2 w-10 pr-2">Pts</th>
-        </tr>
-      </thead>
-      <tbody>
-        {teams.map((team, idx) => {
-          const isUser = team.isUser;
-          const isTop4 = idx < 4;
-          const isTop6 = idx >= 4 && idx < 6;
-          const isTop12 = idx >= 6 && idx < 12;
-          const isRelegated = idx >= 16;
-
-          let rowBg = "";
-          if (isUser) rowBg = "bg-amber-400/20";
-          else if (isTop4) rowBg = "bg-emerald-900/40";
-          else if (isTop6) rowBg = "bg-blue-900/40";
-          else if (isTop12) rowBg = "bg-sky-900/20";
-          else if (isRelegated) rowBg = "bg-rose-900/30";
-
-          let dotColor = "bg-white/20";
-          if (isTop4) dotColor = "bg-emerald-400";
-          else if (isTop6) dotColor = "bg-blue-400";
-          else if (isTop12) dotColor = "bg-sky-400";
-          else if (isRelegated) dotColor = "bg-rose-500";
-
-          return (
-            <tr key={team.name} className={`border-t border-white/10 ${rowBg}`}>
-              <td className="pl-2 py-2 text-white/50 font-black">{idx + 1}</td>
-              <td className="py-2">
-                <div className="flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
-                  <span
-                    className={`truncate max-w-[120px] font-black ${isUser ? "text-amber-300" : "text-white"}`}
-                    title={team.name}
-                  >
-                    {team.name}
-                  </span>
-                </div>
-              </td>
-              <td className="text-center py-2 text-white/70">{team.played}</td>
-              <td className="text-center py-2 text-emerald-400">{team.won}</td>
-              <td className="text-center py-2 text-white/60">{team.drawn}</td>
-              <td className="text-center py-2 text-rose-400">{team.lost}</td>
-              <td className="text-center py-2 text-white/80">{team.goalsFor}</td>
-              <td className="text-center py-2 text-white/80">{team.goalsAgainst}</td>
-              <td className="text-center py-2 text-white/80">
-                {team.goalDifference > 0 ? `+${team.goalDifference}` : team.goalDifference}
-              </td>
-              <td className={`text-center py-2 pr-2 font-black text-sm ${isUser ? "text-amber-300" : "text-white"}`}>
-                {team.points}
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  );
-}
-
-function ScoreCard({
-  homeTeam,
-  awayTeam,
-  homeGoals,
-  awayGoals,
-  userTeamName,
-}: {
-  homeTeam: string;
-  awayTeam: string;
-  homeGoals: number;
-  awayGoals: number;
-  userTeamName: string;
-}) {
-  const isUserHome = homeTeam === userTeamName;
-  const isUserAway = awayTeam === userTeamName;
-  const userGoals = isUserHome ? homeGoals : awayGoals;
-  const oppGoals = isUserHome ? awayGoals : homeGoals;
-  const won = userGoals > oppGoals;
-  const drawn = userGoals === oppGoals;
-
-  return (
-    <div
-      className={`border-4 p-4 flex items-center justify-between gap-4 ${
-        won
-          ? "border-emerald-400 shadow-[4px_4px_0_0_#14532d]"
-          : drawn
-          ? "border-amber-400 shadow-[4px_4px_0_0_#92400e]"
-          : "border-rose-500 shadow-[4px_4px_0_0_#7f1d1d]"
-      }`}
-    >
-      <span
-        className={`font-black text-sm md:text-base uppercase truncate flex-1 text-right ${
-          isUserHome ? "text-amber-300" : "text-white/70"
-        }`}
-      >
-        {homeTeam}
-      </span>
-      <div className="flex items-center gap-3 flex-shrink-0">
-        <span className={`text-2xl md:text-3xl font-black ${isUserHome ? "text-amber-300" : "text-white"}`}>
-          {homeGoals}
-        </span>
-        <span className="text-white/40 font-black text-lg">–</span>
-        <span className={`text-2xl md:text-3xl font-black ${isUserAway ? "text-amber-300" : "text-white"}`}>
-          {awayGoals}
-        </span>
-      </div>
-      <span
-        className={`font-black text-sm md:text-base uppercase truncate flex-1 ${
-          isUserAway ? "text-amber-300" : "text-white/70"
-        }`}
-      >
-        {awayTeam}
-      </span>
-    </div>
-  );
-}
 
 export default function BrasileiraoPage() {
   const router = useRouter();
@@ -269,15 +136,10 @@ export default function BrasileiraoPage() {
               transition={{ duration: 0.25 }}
               className="mb-6"
             >
-              <p className="text-white/50 font-black text-xs uppercase tracking-widest mb-2">
-                {isPt ? "SUA PARTIDA" : "YOUR MATCH"}
-              </p>
-              <ScoreCard
-                homeTeam={currentData.userMatch.homeTeam}
-                awayTeam={currentData.userMatch.awayTeam}
-                homeGoals={currentData.userMatch.homeGoals}
-                awayGoals={currentData.userMatch.awayGoals}
+              <MatchResultCard
+                match={currentData.userMatch}
                 userTeamName={userTeamName}
+                stage={isPt ? `Rodada ${currentData.roundNumber}` : `Round ${currentData.roundNumber}`}
               />
             </motion.div>
           </AnimatePresence>
@@ -321,15 +183,7 @@ export default function BrasileiraoPage() {
               : isPt ? `CLASSIFICAÇÃO APÓS RODADA ${currentData.roundNumber}` : `STANDINGS AFTER ROUND ${currentData.roundNumber}`}
           </p>
 
-          {/* Legend */}
-          <div className="flex flex-wrap gap-3 mb-3 text-xs font-black uppercase">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> {isPt ? "Libertadores" : "Copa Lib."}</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-400 inline-block" /> {isPt ? "Sul-Americana" : "Copa Sud."}</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-sky-400 inline-block" /> {isPt ? "Pré-Lib." : "Pre-Lib."}</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-rose-500 inline-block" /> {isPt ? "Rebaixamento" : "Relegation"}</span>
-          </div>
-
-          <StandingsTable teams={standings} userTeamName={userTeamName} />
+          <LeagueTable table={standings} />
         </motion.div>
 
         {/* Back to menu (final only) */}
