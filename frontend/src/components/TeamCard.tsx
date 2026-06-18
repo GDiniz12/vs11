@@ -34,9 +34,9 @@ export default function TeamCard({
       exit={{ opacity: 0, x: 30 }}
       transition={{ duration: 0.4 }}
     >
-      <Card className="overflow-hidden p-4 md:p-6 bg-white border-4 border-[#00183F] shadow-[8px_8px_0_0_#0033A0]">
+      <Card className="flex flex-col h-full overflow-hidden p-4 md:p-6 bg-white border-4 border-[#00183F] shadow-[8px_8px_0_0_#0033A0]">
         
-        <div className="mb-6 pb-4 border-b-4 border-[#00183F] flex flex-col items-start gap-3">
+        <div className="mb-6 pb-4 border-b-4 border-[#00183F] flex flex-col items-start gap-3 shrink-0">
           <div className="flex items-center gap-3 md:gap-4">
             {logoUrl && (
               <img 
@@ -55,7 +55,7 @@ export default function TeamCard({
           </span>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-2 overflow-y-auto flex-1 pr-2 min-h-0 custom-scrollbar">
           {team.players.map((player, idx) => {
             const isAlreadyDrafted = slots.some((s) => s.player?.name === player.name);
             

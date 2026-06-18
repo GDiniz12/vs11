@@ -7,12 +7,11 @@ import { useGame } from "@/context/GameContext";
 import { useSocket } from "@/context/SocketContext"; 
 import { Player, FormationSlot, TeamData } from "@/types";
 import { getAvailablePositions, getAllTeams, getCountryEmoji, calculateTeamChemistry } from "@/utils/helpers";
-import { calculateTeamStrength } from "@/utils/simulation";
+import { calculateTeamStrength, calculateSectorStrengths } from "@/utils/simulation";
 import { generateOnlineGuerra, generateOnlineTradicional } from "@/utils/tournament";
 import { americans, europeans } from "@/data/data";
 import FootballPitch from "@/components/FootballPitch";
 import TeamCard from "@/components/TeamCard";
-import SquadDisplay from "@/components/SquadDisplay";
 import PositionPicker from "@/components/PositionPicker";
 import Card from "@/components/ui/Card";
 import { useLanguage } from "@/context/LanguageContext";
@@ -43,6 +42,14 @@ export default function DraftPage() {
   const [rerollsLeft, setRerollsLeft] = useState(maxRerolls);
 
   const baseChemistry = useMemo(() => calculateTeamChemistry(slots, formation, null), [slots, formation]);
+  
+  const teamOvr = useMemo(() => {
+    const totalOvr = slots.reduce((sum, slot) => sum + (slot.player ? slot.player.overall : 0), 0);
+    return Math.round(totalOvr / 11);
+  }, [slots]);
+  const teamChemistry = useMemo(() => calculateTeamChemistry(slots, formation, manager), [slots, formation, manager]);
+  const draftedPlayers = useMemo(() => slots.map(s => s.player).filter(Boolean) as Player[], [slots]);
+  const sectors = useMemo(() => calculateSectorStrengths(draftedPlayers), [draftedPlayers]);
 
   const isManagerDraft = draftRound === 11;
   const isDraftComplete = draftRound >= 12;
@@ -305,8 +312,8 @@ export default function DraftPage() {
         </div>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <div className="flex flex-col gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
+        <div className="flex flex-col gap-6 h-full">
           {isDraftComplete ? (
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
@@ -444,8 +451,8 @@ export default function DraftPage() {
               </div>
             </>
           ) : (
-            <>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white border-4 border-[#00183F] p-4 shadow-[6px_6px_0_0_#0033A0] mb-4 md:mb-6 gap-4">
+            <div className="flex-1 flex flex-col min-h-0">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between bg-white border-4 border-[#00183F] p-4 shadow-[6px_6px_0_0_#0033A0] mb-4 md:mb-6 gap-4 shrink-0">
                 <div>
                   <h3 className="text-base md:text-lg font-black text-[#00183F] uppercase leading-none">
                     {tDraft.title}
@@ -477,24 +484,52 @@ export default function DraftPage() {
                 </div>
               </div>
 
-              <AnimatePresence mode="wait">
-                {teamToDisplay && (
-                  <TeamCard
-                    key={currentDraftTeam?.key + "-" + draftRound}
-                    team={teamToDisplay}
-                    slots={slots}
-                    onPlayerSelect={isRolling ? () => {} : handlePlayerSelect}
-                    selectedPlayer={selectedPlayer}
-                    hideOverall={gameMode === "hardcore" || isRolling}
-                  />
-                )}
-              </AnimatePresence>
-            </>
+              <div className="flex-1 min-h-0">
+                <AnimatePresence mode="wait">
+                  {teamToDisplay && (
+                    <TeamCard
+                      key={currentDraftTeam?.key + "-" + draftRound}
+                      team={teamToDisplay}
+                      slots={slots}
+                      onPlayerSelect={isRolling ? () => {} : handlePlayerSelect}
+                      selectedPlayer={selectedPlayer}
+                      hideOverall={gameMode === "hardcore" || isRolling}
+                    />
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           )}
         </div>
 
-        <div className="space-y-6">
-          <Card className="p-4 md:p-6 bg-[#1E293B]">
+        <div className="flex flex-col h-full space-y-6">
+          <Card className="flex-1 p-4 md:p-6 bg-[#1E293B] flex flex-col">
+            <div className="flex flex-col gap-2 mb-4 bg-white p-3 border-4 border-[#00183F] shadow-[4px_4px_0_0_rgba(0,0,0,0.5)]">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-2">
+                <div className="flex gap-2">
+                  <span className="text-xs md:text-sm bg-[#0033A0] text-white border-2 border-[#00183F] px-2 py-0.5 shadow-[2px_2px_0_0_#00183F] font-black" title="Overall">
+                    OVR: {teamOvr}
+                  </span>
+                  <span className="text-xs md:text-sm bg-emerald-600 text-white border-2 border-[#00183F] px-2 py-0.5 shadow-[2px_2px_0_0_#00183F] font-black" title="Entrosamento">
+                    ENT: {teamChemistry}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center bg-gray-100 border-2 border-[#00183F] p-1 shadow-inner text-xs font-black gap-2">
+                  <div className="flex items-center gap-1 text-red-700">
+                    <span>ATA:</span> <span className="text-sm">{sectors.atk}</span>
+                  </div>
+                  <div className="w-px h-4 bg-gray-400" />
+                  <div className="flex items-center gap-1 text-emerald-700">
+                    <span>MEI:</span> <span className="text-sm">{sectors.mid}</span>
+                  </div>
+                  <div className="w-px h-4 bg-gray-400" />
+                  <div className="flex items-center gap-1 text-blue-700">
+                    <span>DEF:</span> <span className="text-sm">{sectors.def}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {selectedPlayer && (
                <div className="bg-amber-400 border-4 border-[#00183F] p-3 mb-4 flex justify-between items-center shadow-[4px_4px_0_0_rgba(0,0,0,0.5)]">
                  <span className="text-[#00183F] font-black uppercase text-xs md:text-sm">
@@ -515,18 +550,16 @@ export default function DraftPage() {
                  </button>
                </div>
             )}
-            <FootballPitch
-              slots={slots}
-              formation={formation}
-              onSlotClick={handleSlotClick}
-              highlightedSlots={highlightedSlotIds}
-              manager={manager}
-            />
+            <div className="flex-1 flex flex-col justify-center">
+              <FootballPitch
+                slots={slots}
+                formation={formation}
+                onSlotClick={handleSlotClick}
+                highlightedSlots={highlightedSlotIds}
+                manager={manager}
+              />
+            </div>
           </Card>
-
-          <div className="p-0 overflow-hidden bg-white text-[#00183F]">
-            <SquadDisplay slots={slots} />
-          </div>
         </div>
       </div>
 
