@@ -30,7 +30,7 @@ export default function HomePage() {
   const [hallRanking, setHallRanking] = useState<{ nickname: string; rating: number }[]>([]);
   const [hallLoading, setHallLoading] = useState(false);
 
-  const API_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
   const openHall = async () => {
     setHallModal(true);
