@@ -296,7 +296,12 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const userTeamName = TRANSLATIONS[lang].your_team;
       const userChemistry = calculateTeamChemistry(prev.slots, prev.formation, prev.manager);
 
-      const allDataTeams = getAllTeams(americans, europeans, nationalTeams);
+      const allDataTeams =
+        prev.tournamentMode === 'louco'
+          ? getAllTeams(americans, europeans, nationalTeams)
+          : prev.tournamentMode === 'brasileirao'
+          ? getBrazilianTeams(americans)
+          : getAllTeams(americans, europeans); // super-mundial: clubs only
       const teamEntries = allDataTeams.map((t) => ({ name: t.name, strength: t.players.reduce((sum, p) => sum + p.overall, 0) / t.players.length, players: t.players }));
 
       const botCap = prev.tournamentMode === 'louco' ? 31 : 35;
