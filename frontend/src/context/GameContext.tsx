@@ -109,17 +109,6 @@ export function GameProvider({ children }: { children: ReactNode }) {
     }
   }, [state, isLoaded]);
 
-  useEffect(() => {
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (state.phase !== 'home' && state.phase !== 'result') {
-        e.preventDefault();
-        e.returnValue = '';
-      }
-    };
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [state.phase]);
-
   const clearSave = useCallback(() => {
     localStorage.removeItem('16a0_save');
     setState({ ...initialState, userTeamName: TRANSLATIONS[lang].your_team });
@@ -152,7 +141,11 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const pool = getBrazilianTeams(americans);
       return pool[Math.floor(Math.random() * pool.length)];
     }
-    return getRandomTeam(americans, europeans, nationalTeams);
+    if (mode === 'louco') {
+      return getRandomTeam(americans, europeans, nationalTeams);
+    }
+    // super-mundial: clubs only, no national teams
+    return getRandomTeam(americans, europeans);
   };
 
   const getManagerPoolForMode = (mode: TournamentMode) => {
@@ -441,7 +434,20 @@ export function GameProvider({ children }: { children: ReactNode }) {
       const userChemistry = calculateTeamChemistry(prev.slots, prev.formation, prev.manager);
 
       const singleLeg = prev.tournamentMode === 'copa-do-mundo';
-      const rounds = generateKnockoutRounds(prev.leagueTable, prev.userTeamName, userStrength, prev.tactic, prev.difficulty, userChemistry, getManagerBonus(prev.manager), singleLeg);
+
+      // For Copa do Mundo, apply authentic FIFA cross-matching so groups don't meet in R16.
+      // qualifiedTeams order: [A1,A2,B1,B2,C1,C2,D1,D2,E1,E2,F1,F2,G1,G2,H1,H2]
+      // Reorder to: [A1,B2, C1,D2, E1,F2, G1,H2, B1,A2, D1,C2, F1,E2, H1,G2]
+      let bracketTable = prev.leagueTable;
+      if (prev.tournamentMode === 'copa-do-mundo' && prev.leagueTable.length >= 16) {
+        const qt = prev.leagueTable;
+        bracketTable = [
+          qt[0], qt[3], qt[4], qt[7], qt[8], qt[11], qt[12], qt[15],
+          qt[2], qt[1], qt[6], qt[5], qt[10], qt[9], qt[14], qt[13],
+        ];
+      }
+
+      const rounds = generateKnockoutRounds(bracketTable, prev.userTeamName, userStrength, prev.tactic, prev.difficulty, userChemistry, getManagerBonus(prev.manager), singleLeg);
 
       const newStats = { ...prev.stats };
       rounds.forEach((r) => {
