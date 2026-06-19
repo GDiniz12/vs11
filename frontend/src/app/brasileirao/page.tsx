@@ -12,7 +12,7 @@ import MatchResultCard from "@/components/MatchResultCard";
 export default function BrasileiraoPage() {
   const router = useRouter();
   const { lang } = useLanguage();
-  const { brasilRounds, userTeamName, clearSave } = useGame();
+  const { brasilRounds, userTeamName, clearSave, setPhase } = useGame();
   const isPt = lang === "pt";
 
   const [displayedRound, setDisplayedRound] = useState(0);
@@ -186,13 +186,24 @@ export default function BrasileiraoPage() {
           <LeagueTable table={standings} />
         </motion.div>
 
-        {/* Back to menu (final only) */}
+        {/* Back to menu / See Results (final only) */}
         {isFinal && (
-          <div className="text-center pb-12">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pb-12">
             <motion.button
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
+              whileHover={{ translateY: -2, translateX: -2, boxShadow: "10px 10px 0 0 #001a6e" }}
+              whileTap={{ translateY: 2, translateX: 2, boxShadow: "0px 0px 0 0 #001a6e" }}
+              onClick={() => { setPhase("result"); router.push("/result"); }}
+              className="px-10 py-5 bg-[#0033A0] text-white border-4 border-[#00183F] font-black text-xl uppercase tracking-widest shadow-[6px_6px_0_0_#00183F]"
+            >
+              {isPt ? "Ver Resultados" : "See Results"}
+            </motion.button>
+            <motion.button
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.5 }}
               whileHover={{ translateY: -2, translateX: -2, boxShadow: "10px 10px 0 0 #001a6e" }}
               whileTap={{ translateY: 2, translateX: 2, boxShadow: "0px 0px 0 0 #001a6e" }}
               onClick={handleBackToMenu}
