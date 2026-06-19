@@ -19,6 +19,7 @@ export default function KnockoutPage() {
     knockoutRounds,
     userTeamName,
     isChampion,
+    tournamentMode,
     setPhase,
     startKnockoutPhase
   } = useGame();
@@ -178,7 +179,11 @@ export default function KnockoutPage() {
     router.push("/result");
   };
 
-  const title = lang === "pt" ? "SUPER MUNDIAL DE CLUBES" : "SUPER CLUB WORLD CUP";
+  const title = tournamentMode === 'copa-do-mundo'
+    ? (lang === "pt" ? "COPA DO MUNDO" : "WORLD CUP")
+    : tournamentMode === 'louco'
+    ? (lang === "pt" ? "MODO LOUCOS" : "CRAZY MODE")
+    : (lang === "pt" ? "SUPER MUNDIAL DE CLUBES" : "SUPER CLUB WORLD CUP");
   const phaseLabel = lang === "pt" ? "FASE MATA-MATA" : "KNOCKOUT STAGE";
 
   const userKnockoutRounds = knockoutRounds.filter(r =>

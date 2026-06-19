@@ -13,11 +13,10 @@ import MatchResultCard from "@/components/MatchResultCard";
 
 function TeamLabel({ name, isUser }: { name: string; isUser: boolean }) {
   const flag = getNationalTeamFlag(name);
-  const label = name.replace(/\s+\d{4}$/, "").trim();
   return (
     <span className={`flex items-center gap-1 font-black truncate ${isUser ? "text-amber-300" : "text-white"}`} title={name}>
       {flag && <span className="flex-shrink-0 text-[10px]">{flag}</span>}
-      <span className="truncate max-w-[72px] text-[11px]">{label}</span>
+      <span className="truncate max-w-[80px] text-[11px]">{name}</span>
     </span>
   );
 }
@@ -87,8 +86,8 @@ function GroupCard({ group, userTeamName, delay }: { group: CopaGroup; userTeamN
             const isUserMatch = m.homeTeam === userTeamName || m.awayTeam === userTeamName;
             const homeFlag = getNationalTeamFlag(m.homeTeam);
             const awayFlag = getNationalTeamFlag(m.awayTeam);
-            const homeShort = m.homeTeam.replace(/\s+\d{4}$/, "");
-            const awayShort = m.awayTeam.replace(/\s+\d{4}$/, "");
+            const homeShort = m.homeTeam;
+            const awayShort = m.awayTeam;
             return (
               <div key={i} className={`flex items-center text-[10px] font-black py-0.5 px-2 gap-1 ${isUserMatch ? "bg-amber-400/15" : ""}`}>
                 <span className={`flex-1 text-right truncate ${m.homeTeam === userTeamName ? "text-amber-300" : "text-white/80"}`}>
@@ -113,7 +112,7 @@ function GroupCard({ group, userTeamName, delay }: { group: CopaGroup; userTeamN
 export default function CopaGroupPage() {
   const router = useRouter();
   const { lang } = useLanguage();
-  const { copaGroups, userMatches, userTeamName, startKnockoutPhase, setPhase } = useGame();
+  const { copaGroups, userMatches, userTeamName, setPhase } = useGame();
   const isPt = lang === "pt";
   const matchesEndRef = useRef<HTMLDivElement>(null);
 
@@ -174,7 +173,6 @@ export default function CopaGroupPage() {
 
   const handleContinue = () => {
     if (userQualified) {
-      startKnockoutPhase();
       router.push("/knockout");
     } else {
       setPhase("result");

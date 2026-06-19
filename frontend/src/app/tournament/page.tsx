@@ -21,7 +21,6 @@ export default function TournamentPage() {
     leagueTable,
     userMatches,
     startLeaguePhase,
-    startKnockoutPhase,
     userTeamName,
     setPhase,
   } = useGame();
@@ -92,7 +91,6 @@ export default function TournamentPage() {
 
   const handleContinue = () => {
     if (qualified) {
-      if (!currentRoom) startKnockoutPhase();
       router.push("/knockout");
     } else {
       setPhase("result");
