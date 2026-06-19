@@ -15,6 +15,27 @@ import { calculateTeamChemistry } from "@/utils/helpers";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
+type RatingBreakdown = { winPts: number; drawPts: number; lossPts: number; delta: number };
+
+function calcRating(
+  stats: { wins: number; draws: number; losses: number },
+  isOnline: boolean,
+  difficulty: string
+): RatingBreakdown {
+  let winPts: number, drawPts: number, lossPts: number;
+  if (isOnline) {
+    winPts = 100; drawPts = 30; lossPts = -50;
+  } else if (difficulty === 'easy') {
+    winPts = 15; drawPts = 3; lossPts = -7;
+  } else if (difficulty === 'impossible') {
+    winPts = 60; drawPts = 10; lossPts = -30;
+  } else {
+    winPts = 30; drawPts = 5; lossPts = -15;
+  }
+  const delta = stats.wins * winPts + stats.draws * drawPts + stats.losses * lossPts;
+  return { winPts, drawPts, lossPts, delta };
+}
+
 export default function ResultPage() {
   const router = useRouter();
   const { lang } = useLanguage();
@@ -32,17 +53,7 @@ export default function ResultPage() {
 
   useEffect(() => {
     if (!user || !token || ratingSubmitted.current) return;
-
-    let winPts: number, drawPts: number, lossPts: number;
-    if (isOnline) {
-      winPts = 100; drawPts = 30; lossPts = -50;
-    } else {
-      if (difficulty === 'easy')       { winPts = 15;  drawPts = 3;  lossPts = -7;  }
-      else if (difficulty === 'impossible') { winPts = 60;  drawPts = 10; lossPts = -30; }
-      else                             { winPts = 30;  drawPts = 5;  lossPts = -15; }
-    }
-
-    const delta = stats.wins * winPts + stats.draws * drawPts + stats.losses * lossPts;
+    const { delta } = calcRating(stats, isOnline, difficulty);
     if (delta === 0) return;
     ratingSubmitted.current = true;
 
@@ -83,6 +94,11 @@ export default function ResultPage() {
       teamTitle: "Elenco Utilizado no Torneio",
       championBadge: "🏆 CAMPEÃO DO MUNDO!",
       eliminatedBadge: "CAMPANHA ENCERRADA",
+      ratingTitle: "PONTUAÇÃO OBTIDA",
+      ratingGained: "Pontos ganhos",
+      ratingTotal: "Rating atual",
+      wins: "Vitórias",
+      losses: "Derrotas",
     },
     en: {
       title: "SUPER CLUB WORLD CUP",
@@ -97,6 +113,11 @@ export default function ResultPage() {
       teamTitle: "Squad Used in Tournament",
       championBadge: "🏆 WORLD CHAMPION!",
       eliminatedBadge: "CAMPAIGN CONCLUDED",
+      ratingTitle: "POINTS EARNED",
+      ratingGained: "Points gained",
+      ratingTotal: "Current rating",
+      wins: "Wins",
+      losses: "Losses",
     },
   }[lang];
 
@@ -115,6 +136,8 @@ export default function ResultPage() {
   const totalOvr = slots.reduce((sum, slot) => sum + (slot.player ? slot.player.overall : 0), 0);
   const teamOvr = Math.round(totalOvr / 11) || 0;
   const teamChemistry = calculateTeamChemistry(slots, formation, manager) || 0;
+
+  const { winPts, drawPts, lossPts, delta: ratingDelta } = calcRating(stats, isOnline, difficulty);
 
   return (
     <div className="min-h-screen bg-[#00183F] p-4 md:p-12 font-sans text-white">
@@ -139,6 +162,36 @@ export default function ResultPage() {
         <div className={`border-4 border-white text-center py-4 font-black uppercase text-xl md:text-2xl tracking-widest shadow-[6px_6px_0_0_rgba(0,0,0,0.8)] ${isChampion ? "bg-amber-400 text-[#00183F]" : "bg-rose-600 text-white"}`}>
           {isChampion ? t.championBadge : t.eliminatedBadge}
         </div>
+
+        {/* CARD DE PONTUAÇÃO */}
+        {user && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 120 }}
+          >
+            <div className={`border-4 border-[#00183F] shadow-[8px_8px_0_0_#00183F] ${ratingDelta >= 0 ? "bg-emerald-500" : "bg-rose-600"} text-white`}>
+              <div className="flex items-center justify-between px-6 py-4 gap-4 flex-wrap">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80">{t.ratingTitle}</p>
+                  <p className="text-5xl font-black tracking-tighter leading-none mt-1">
+                    {ratingDelta >= 0 ? "+" : ""}{ratingDelta}
+                  </p>
+                  <p className="text-xs font-bold opacity-70 mt-1">
+                    {t.wins} ×{winPts >= 0 ? "+" : ""}{winPts} &nbsp;|&nbsp;
+                    {t.draws} ×{drawPts >= 0 ? "+" : ""}{drawPts} &nbsp;|&nbsp;
+                    {t.losses} ×{lossPts}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-80">{t.ratingTotal}</p>
+                  <p className="text-3xl font-black">{user.rating}</p>
+                  <p className="text-xs font-bold opacity-70">@{user.nickname}</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* CARD PRINCIPAL: VITÓRIAS - DERROTAS */}
         <motion.div
