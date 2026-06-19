@@ -227,7 +227,9 @@ export default function KnockoutPage() {
                   onClick={() => setSimulationMode(simulationMode === 'automatic' ? 'accompanied' : 'automatic')}
                   className="bg-white text-[#00183F] border-4 border-[#00183F] px-4 py-2 font-black uppercase text-xs md:text-sm hover:bg-amber-400 hover:shadow-[4px_4px_0_0_rgba(0,0,0,0.5)] transition-all"
                 >
-                  Trocar para Simulação {simulationMode === 'automatic' ? 'Acompanhada' : 'Automática'}
+                  {lang === "pt"
+                    ? `Trocar para Simulação ${simulationMode === 'automatic' ? 'Acompanhada' : 'Automática'}`
+                    : `Switch to ${simulationMode === 'automatic' ? 'Accompanied' : 'Automatic'} Mode`}
                 </button>
               )}
             </div>
