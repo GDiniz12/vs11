@@ -46,13 +46,14 @@ export default function ResultPage() {
   const {
     slots, userTeamName, phase,
     knockoutRounds, stats, isChampion, difficulty,
+    isRanked, tournamentMode,
     clearSave, formation, manager
   } = useGame();
 
   const isOnline = !!currentRoom;
 
   useEffect(() => {
-    if (!user || !token || ratingSubmitted.current) return;
+    if (!user || !token || !isRanked || ratingSubmitted.current) return;
     const { delta } = calcRating(stats, isOnline, difficulty);
     if (delta === 0) return;
     ratingSubmitted.current = true;
@@ -65,7 +66,7 @@ export default function ResultPage() {
       .then((res) => res.json())
       .then((data) => { if (data.user) updateRating(data.user.rating); })
       .catch(() => {});
-  }, [user, token, stats, isOnline, difficulty]);
+  }, [user, token, isRanked, stats, isOnline, difficulty]);
 
   const handleBackToHome = () => {
     // Limpa a sala online (se houver) para não poluir o modo offline
@@ -80,9 +81,17 @@ export default function ResultPage() {
 
   const hasTeam = slots && slots.length > 0 && slots.some((s) => s.player);
 
+  const tournamentTitles: Record<string, { pt: string; en: string }> = {
+    "super-mundial": { pt: "SUPER MUNDIAL DE CLUBES", en: "SUPER CLUB WORLD CUP" },
+    "copa-do-mundo": { pt: "COPA DO MUNDO", en: "WORLD CUP" },
+    "brasileirao": { pt: "BRASILEIRÃO", en: "BRASILEIRÃO" },
+    "louco": { pt: "MODO LOUCOS", en: "CRAZY MODE" },
+  };
+  const tournamentTitle = (tournamentTitles[tournamentMode] || tournamentTitles["super-mundial"])[lang];
+
   const t = {
     pt: {
-      title: "SUPER MUNDIAL DE CLUBES",
+      title: tournamentTitle,
       subtitle: "Relatório de Desempenho Final",
       squadError: "Nenhum elenco selecionado.",
       backBtn: "Montar Novo Time",
@@ -101,7 +110,7 @@ export default function ResultPage() {
       losses: "Derrotas",
     },
     en: {
-      title: "SUPER CLUB WORLD CUP",
+      title: tournamentTitle,
       subtitle: "Final Performance Report",
       squadError: "No squad selected.",
       backBtn: "Build New Squad",
@@ -164,7 +173,7 @@ export default function ResultPage() {
         </div>
 
         {/* CARD DE PONTUAÇÃO */}
-        {user && (
+        {user && isRanked && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
