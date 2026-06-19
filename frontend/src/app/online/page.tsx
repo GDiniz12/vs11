@@ -4,12 +4,15 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSocket } from "@/context/SocketContext";
 import { useGame } from "@/context/GameContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function OnlinePage() {
   const router = useRouter();
   const { socket, setNickname, nickname, setCurrentRoom, saveSession } = useSocket();
   const { clearSave } = useGame();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<"buscar" | "criar">("buscar");
+  const [showRankedModal, setShowRankedModal] = useState(false);
   const [rooms, setRooms] = useState<any[]>([]);
   
   const [roomName, setRoomName] = useState("");
@@ -21,6 +24,7 @@ export default function OnlinePage() {
   // NOVO: Opções exclusivas do Modo Tradicional
   const [draftMode, setDraftMode] = useState("classic");
   const [difficulty, setDifficulty] = useState("medium");
+  const [isRanked, setIsRanked] = useState(false);
 
   const [joinPassword, setJoinPassword] = useState("");
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
@@ -55,7 +59,7 @@ export default function OnlinePage() {
     if (!nickname) return alert("Digite um nickname no topo da página!");
     
     // Enviando as novas opções
-    socket?.emit("createRoom", { roomName, nickname, mode, tournamentMode, draftMode, difficulty, password: hasPassword ? password : null }, (response: any) => {
+    socket?.emit("createRoom", { roomName, nickname, mode, tournamentMode, draftMode, difficulty, isRanked, password: hasPassword ? password : null }, (response: any) => {
       if (response.success) {
         clearSave();
         saveSession(response.roomId);
@@ -64,8 +68,12 @@ export default function OnlinePage() {
     });
   };
 
-  const handleJoinRoom = (roomId: string, reqPassword: boolean) => {
+  const handleJoinRoom = (roomId: string, reqPassword: boolean, roomIsRanked?: boolean) => {
     if (!nickname) return alert("Digite um nickname no topo da página!");
+    if (roomIsRanked && !user) {
+      setShowRankedModal(true);
+      return;
+    }
     if (reqPassword && !joinPassword) {
       setSelectedRoomId(roomId);
       return;
@@ -151,6 +159,11 @@ export default function OnlinePage() {
                             { { 'copa-do-mundo': '🌍 Copa', 'brasileirao': '🇧🇷 Brasileirão', 'louco': '🔥 Louco' }[room.tournamentMode as string] }
                           </span>
                         )}
+                        {room.isRanked && (
+                          <span className="text-xs bg-amber-500 text-white px-2 py-1 ml-1 font-black uppercase border-2 border-[#00183F]">
+                            🏆 Rankeada
+                          </span>
+                        )}
                       </h3>
                       <p className="font-bold text-sm text-gray-600 mt-1">{room.players.length}/{room.maxPlayers} Jogadores {room.hasPassword && '🔒'}</p>
                     </div>
@@ -163,11 +176,11 @@ export default function OnlinePage() {
                           className="border-2 border-[#00183F] px-2 w-full"
                           onChange={(e) => setJoinPassword(e.target.value)}
                         />
-                        <button onClick={() => handleJoinRoom(room.id, true)} className="bg-emerald-500 px-4 py-2 font-black border-2 border-[#00183F]">Entrar</button>
+                        <button onClick={() => handleJoinRoom(room.id, true, room.isRanked)} className="bg-emerald-500 px-4 py-2 font-black border-2 border-[#00183F]">Entrar</button>
                       </div>
                     ) : (
-                      <button 
-                        onClick={() => handleJoinRoom(room.id, room.hasPassword)}
+                      <button
+                        onClick={() => handleJoinRoom(room.id, room.hasPassword, room.isRanked)}
                         className="bg-[#00183F] text-white px-6 py-2 font-black uppercase hover:scale-105 transition-transform border-2 border-black w-full md:w-auto"
                       >
                         Entrar
@@ -245,6 +258,23 @@ export default function OnlinePage() {
               <label htmlFor="hasPassword" className="font-black uppercase">Sala com Senha?</label>
             </div>
 
+            <div className="flex items-center gap-2 mt-2">
+              <input
+                type="checkbox"
+                id="isRanked"
+                checked={isRanked}
+                onChange={(e) => {
+                  if (!user) { setShowRankedModal(true); return; }
+                  setIsRanked(e.target.checked);
+                }}
+                className="w-5 h-5"
+              />
+              <label htmlFor="isRanked" className="font-black uppercase flex items-center gap-2">
+                🏆 Partida Rankeada
+                {!user && <span className="text-xs text-gray-400 font-bold normal-case">(login necessário)</span>}
+              </label>
+            </div>
+
             {hasPassword && (
               <div>
                 <label className="block font-black uppercase mb-1 mt-2">Senha</label>
@@ -258,6 +288,40 @@ export default function OnlinePage() {
           </form>
         )}
       </div>
+
+      {/* Modal: ranked room requires account */}
+      {showRankedModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#D9D9D9] border-4 border-[#00183F] p-6 max-w-sm w-full text-[#00183F] shadow-[10px_10px_0_0_#0033A0] flex flex-col relative">
+            <h2 className="text-2xl font-black uppercase tracking-tight mb-3 border-b-4 border-[#0033A0] pb-2">
+              🏆 Partida Rankeada
+            </h2>
+            <p className="font-bold text-sm mb-6">
+              Partidas rankeadas exigem uma conta. Faça login ou crie uma conta para continuar.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => { setShowRankedModal(false); router.push("/login"); }}
+                className="w-full bg-[#0033A0] text-white border-2 border-[#00183F] py-3 font-black uppercase tracking-widest shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:shadow-[6px_6px_0_0_#00183F] transition-all"
+              >
+                Entrar
+              </button>
+              <button
+                onClick={() => { setShowRankedModal(false); router.push("/register"); }}
+                className="w-full bg-emerald-500 text-white border-2 border-[#00183F] py-3 font-black uppercase tracking-widest shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:shadow-[6px_6px_0_0_#00183F] transition-all"
+              >
+                Criar Conta
+              </button>
+              <button
+                onClick={() => setShowRankedModal(false)}
+                className="text-gray-500 font-bold text-sm uppercase tracking-widest hover:text-[#00183F] transition-colors mt-1"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

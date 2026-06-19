@@ -60,6 +60,7 @@ io.on('connection', (socket) => {
       tournamentMode: data.tournamentMode || 'super-mundial',
       draftMode: data.draftMode || 'classic',
       difficulty: data.mode === 'tradicional' ? (data.difficulty || 'medium') : 'medium',
+      isRanked: !!data.isRanked,
       hasPassword: !!data.password,
       password: data.password || null,
       maxPlayers: 8,

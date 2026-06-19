@@ -9,6 +9,7 @@ import { FormationType } from "@/types";
 import FootballPitch from "@/components/FootballPitch";
 import Button from "@/components/ui/Button";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 import { TRANSLATIONS } from "@/lib/constants";
 
 const formations: FormationType[] = ["4-3-3", "4-4-2", "3-4-3", "3-5-2", "5-4-1", "4-2-3-1"];
@@ -22,6 +23,7 @@ export default function FormationPage() {
     gameMode, setGameMode,
     tactic, setTactic,
     difficulty, setDifficulty,
+    isRanked, setIsRanked,
     slots, drawNextTeam, setPhase,
     setTournamentMode,
   } = useGame();
@@ -48,6 +50,7 @@ export default function FormationPage() {
     router.push("/draft");
   };
 
+  const { user } = useAuth();
   const t = TRANSLATIONS[lang];
   const isPt = lang === "pt";
 
@@ -118,7 +121,7 @@ export default function FormationPage() {
           </p>
         </div>
 
-        <div className={`grid grid-cols-1 gap-8 mb-10 w-full items-start ${currentRoom ? "lg:grid-cols-1 max-w-sm mx-auto" : "lg:grid-cols-3"}`}>
+        <div className={`grid grid-cols-1 gap-8 mb-10 w-full items-start ${currentRoom ? "lg:grid-cols-1 max-w-sm mx-auto" : "lg:grid-cols-4"}`}>
           
           {!currentRoom && (
             <>
@@ -175,6 +178,31 @@ export default function FormationPage() {
                 </div>
               </div>
             </>
+          )}
+
+          {/* RANKEADA — offline only, requires account */}
+          {!currentRoom && (
+            <div className="flex flex-col items-center w-full">
+              <h2 className="text-sm font-black text-white uppercase tracking-widest border-b-4 border-white/20 pb-2 mb-4 w-full text-center">
+                {isPt ? "Partida" : "Match"}
+              </h2>
+              <div className="flex flex-col gap-3 w-full">
+                <button
+                  onClick={() => user && setIsRanked(false)}
+                  className={`flex flex-col items-center justify-center p-3 border-4 transition-all duration-75 ${!isRanked ? 'bg-[#0033A0] text-white translate-x-[2px] translate-y-[2px] shadow-none border-amber-400' : 'bg-[#E2E8F0] text-[#00183F] shadow-[4px_4px_0_0_#0033A0] hover:-translate-y-1 hover:-translate-x-1 border-[#00183F] opacity-70 hover:opacity-100'}`}
+                >
+                  <span className="text-lg font-black uppercase tracking-widest">{isPt ? 'Normal' : 'Normal'}</span>
+                </button>
+                <button
+                  onClick={() => user ? setIsRanked(true) : undefined}
+                  title={!user ? (isPt ? 'Faça login para jogar Rankeada' : 'Login to play Ranked') : undefined}
+                  className={`flex flex-col items-center justify-center p-3 border-4 transition-all duration-75 ${isRanked ? 'bg-amber-500 text-white translate-x-[2px] translate-y-[2px] shadow-none border-amber-400' : user ? 'bg-[#E2E8F0] text-[#00183F] shadow-[4px_4px_0_0_#b45309] hover:-translate-y-1 hover:-translate-x-1 border-[#00183F] opacity-70 hover:opacity-100' : 'bg-[#E2E8F0] text-gray-400 border-gray-300 opacity-40 cursor-not-allowed'}`}
+                >
+                  <span className="text-lg font-black uppercase tracking-widest">🏆 {isPt ? 'Rankeada' : 'Ranked'}</span>
+                  {!user && <span className="text-[10px] font-bold mt-0.5 opacity-60">{isPt ? 'Login necessário' : 'Login required'}</span>}
+                </button>
+              </div>
+            </div>
           )}
 
           {/* TÁTICA FICA PARA TODOS (Inclusive no online) */}

@@ -1,27 +1,55 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useGame } from "@/context/GameContext";
 import { useSocket } from "@/context/SocketContext";
 import { useLanguage } from "@/context/LanguageContext";
+import { useAuth } from "@/context/AuthContext";
 import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import FootballPitch from "@/components/FootballPitch";
 import TournamentBracket from "@/components/TournamentBracket";
 import { calculateTeamChemistry } from "@/utils/helpers";
 
+const API_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+
 export default function ResultPage() {
   const router = useRouter();
   const { lang } = useLanguage();
   const { socket, currentRoom, setCurrentRoom, clearSession } = useSocket();
-  
-  const { 
-    slots, userTeamName, phase, 
+  const { user, token } = useAuth();
+  const ratingSubmitted = useRef(false);
+
+  const {
+    slots, userTeamName, phase,
     knockoutRounds, stats, isChampion,
+    isRanked,
     clearSave, formation, manager
   } = useGame();
+
+  const isOnline = !!currentRoom;
+
+  useEffect(() => {
+    if (!isRanked || !user || !token || ratingSubmitted.current) return;
+
+    const multiplier = isOnline ? 2 : 1;
+    const delta =
+      stats.wins * 30 * multiplier +
+      stats.losses * -15 * multiplier +
+      stats.draws * 5 * multiplier +
+      (isChampion ? 100 * multiplier : 0);
+
+    if (delta === 0) return;
+    ratingSubmitted.current = true;
+
+    fetch(`${API_URL}/api/auth/rating`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ delta }),
+    }).catch(() => {});
+  }, [isRanked, user, token, stats, isChampion, isOnline]);
 
   const handleBackToHome = () => {
     // Limpa a sala online (se houver) para não poluir o modo offline

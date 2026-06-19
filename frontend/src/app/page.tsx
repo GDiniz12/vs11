@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -26,6 +26,24 @@ export default function HomePage() {
   const router = useRouter();
   const { lang } = useLanguage();
   const { user, logout, isLoading } = useAuth();
+  const [hallModal, setHallModal] = useState(false);
+  const [hallRanking, setHallRanking] = useState<{ nickname: string; rating: number }[]>([]);
+  const [hallLoading, setHallLoading] = useState(false);
+
+  const API_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+
+  const openHall = async () => {
+    setHallModal(true);
+    setHallLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/hall-da-fama`);
+      const data = await res.json();
+      setHallRanking(data.ranking || []);
+    } catch {
+      setHallRanking([]);
+    }
+    setHallLoading(false);
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -47,6 +65,10 @@ export default function HomePage() {
       createAccount: "Criar Conta",
       logout: "Sair",
       rating: "Rating",
+      hallBtn: "Ver Hall da Fama",
+      hallTitle: "Hall da Fama",
+      hallEmpty: "Nenhum jogador ainda.",
+      hallClose: "Fechar",
     },
     en: {
       badge: "The Ultimate Simulator",
@@ -59,6 +81,10 @@ export default function HomePage() {
       createAccount: "Sign Up",
       logout: "Logout",
       rating: "Rating",
+      hallBtn: "Hall of Fame",
+      hallTitle: "Hall of Fame",
+      hallEmpty: "No players yet.",
+      hallClose: "Close",
     }
   };
 
@@ -151,6 +177,15 @@ export default function HomePage() {
           >
             {t.buttonOnline}
           </motion.button>
+
+          <motion.button
+            onClick={openHall}
+            className="px-8 py-4 bg-amber-400 text-[#00183F] border-4 border-[#00183F] font-black text-xl uppercase tracking-wider transition-all duration-75 shadow-[6px_6px_0_0_#b45309]"
+            whileHover={{ translateY: -2, translateX: -2, boxShadow: "10px 10px 0 0 #b45309" }}
+            whileTap={{ translateY: 4, translateX: 4, boxShadow: "0px 0px 0 0 #b45309" }}
+          >
+            🏆 {t.hallBtn}
+          </motion.button>
         </div>
       </motion.div>
 
@@ -195,6 +230,45 @@ export default function HomePage() {
           </p>
         </div>
       </motion.div>
+
+      {/* Hall da Fama Modal */}
+      {hallModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-[#D9D9D9] border-4 border-[#00183F] p-6 max-w-md w-full text-[#00183F] shadow-[12px_12px_0_0_#0033A0] flex flex-col"
+          >
+            <h2 className="text-3xl font-black uppercase tracking-tight mb-1 border-b-4 border-[#0033A0] pb-3">
+              🏆 {t.hallTitle}
+            </h2>
+            <p className="text-xs font-bold uppercase tracking-widest text-[#0033A0] mb-6">Top 10 · Rating</p>
+
+            {hallLoading ? (
+              <div className="py-10 text-center font-black uppercase tracking-widest text-gray-500">...</div>
+            ) : hallRanking.length === 0 ? (
+              <p className="py-10 text-center font-bold text-gray-500">{t.hallEmpty}</p>
+            ) : (
+              <ol className="flex flex-col gap-2">
+                {hallRanking.map((entry, i) => (
+                  <li key={i} className={`flex items-center justify-between px-4 py-3 border-4 border-[#00183F] font-black uppercase ${i === 0 ? 'bg-amber-400' : i === 1 ? 'bg-gray-300' : i === 2 ? 'bg-orange-300' : 'bg-white'} shadow-[3px_3px_0_0_#00183F]`}>
+                    <span className="text-2xl w-10 text-center">{i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}</span>
+                    <span className="flex-1 ml-3 text-sm tracking-widest truncate">{entry.nickname}</span>
+                    <span className="text-lg">{entry.rating} pts</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+
+            <button
+              onClick={() => setHallModal(false)}
+              className="mt-6 w-full bg-[#0033A0] text-white border-2 border-[#00183F] py-3 font-black uppercase tracking-widest shadow-[4px_4px_0_0_#00183F] hover:-translate-y-1 hover:shadow-[6px_6px_0_0_#00183F] transition-all text-lg"
+            >
+              {t.hallClose}
+            </button>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

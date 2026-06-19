@@ -142,4 +142,36 @@ router.get('/matches', verifyToken, async (req, res) => {
   }
 });
 
+// PATCH /api/auth/rating
+router.patch('/rating', verifyToken, async (req, res) => {
+  const { delta } = req.body;
+  if (typeof delta !== 'number') {
+    return res.status(400).json({ message: 'Delta inválido.' });
+  }
+
+  try {
+    const result = await pool.query(
+      'UPDATE users SET rating = GREATEST(0, rating + $1) WHERE id = $2 RETURNING id, nickname, rating',
+      [delta, req.user.id]
+    );
+    res.json({ user: result.rows[0] });
+  } catch (err) {
+    console.error('Rating update error:', err);
+    res.status(500).json({ message: 'Erro interno do servidor.' });
+  }
+});
+
+// GET /api/auth/hall-da-fama
+router.get('/hall-da-fama', async (_req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT nickname, rating FROM users ORDER BY rating DESC LIMIT 10'
+    );
+    res.json({ ranking: result.rows });
+  } catch (err) {
+    console.error('Hall da fama error:', err);
+    res.status(500).json({ message: 'Erro interno do servidor.' });
+  }
+});
+
 module.exports = router;

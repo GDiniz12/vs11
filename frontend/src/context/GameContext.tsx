@@ -17,6 +17,7 @@ interface GameState {
   tournamentMode: TournamentMode;
   tactic: TacticType;
   difficulty: DifficultyType;
+  isRanked: boolean;
   slots: FormationSlot[];
   draftRound: number;
   currentDraftTeam: TeamData | null;
@@ -36,6 +37,7 @@ interface GameContextType extends GameState {
   setFormation: (f: FormationType) => void;
   setGameMode: (m: GameMode) => void;
   setTournamentMode: (m: TournamentMode) => void;
+  setIsRanked: (v: boolean) => void;
   startCopaGroupStage: () => void;
   startBrasileirao: () => void;
   setTactic: (t: TacticType) => void;
@@ -63,6 +65,7 @@ const initialState: GameState = {
   tournamentMode: 'super-mundial',
   tactic: 'balanced',
   difficulty: 'medium',
+  isRanked: false,
   slots: [],
   draftRound: 0,
   currentDraftTeam: null,
@@ -136,6 +139,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const setFormation = useCallback((f: FormationType) => setState((prev) => ({ ...prev, formation: f, slots: getFormationSlots(f) })), []);
   const setGameMode = useCallback((m: GameMode) => setState((prev) => ({ ...prev, gameMode: m })), []);
   const setTournamentMode = useCallback((m: TournamentMode) => setState((prev) => ({ ...prev, tournamentMode: m })), []);
+  const setIsRanked = useCallback((v: boolean) => setState((prev) => ({ ...prev, isRanked: v })), []);
   const setTactic = useCallback((t: TacticType) => setState((prev) => ({ ...prev, tactic: t })), []);
   const setDifficulty = useCallback((d: DifficultyType) => setState((prev) => ({ ...prev, difficulty: d })), []);
   
@@ -278,6 +282,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         knockoutRounds: koWithUserContext,
         userTeamName: nickname,
         isChampion,
+        isRanked: !!data.isRanked,
         stats: newStats // <- A mágica final para a página de resultados!
       };
     });
@@ -466,7 +471,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   const resetGame = useCallback(() => setState({ ...initialState, userTeamName: TRANSLATIONS[lang].your_team }), [lang]);
 
   return (
-    <GameContext.Provider value={{ ...state, setFormation, setGameMode, setTournamentMode, setTactic, setDifficulty, assignPlayerToSlot, assignManager, drawNextTeam, startLeaguePhase, startCopaGroupStage, startBrasileirao, startKnockoutPhase, setPhase, setOnlineTournamentState, resetGame, swapPlayers, undoPick, canUndo: undoStack.length > 0, clearSave }}>
+    <GameContext.Provider value={{ ...state, setFormation, setGameMode, setTournamentMode, setIsRanked, setTactic, setDifficulty, assignPlayerToSlot, assignManager, drawNextTeam, startLeaguePhase, startCopaGroupStage, startBrasileirao, startKnockoutPhase, setPhase, setOnlineTournamentState, resetGame, swapPlayers, undoPick, canUndo: undoStack.length > 0, clearSave }}>
       {children}
     </GameContext.Provider>
   );
