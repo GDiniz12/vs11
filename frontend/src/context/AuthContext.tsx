@@ -26,7 +26,7 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
 });
 
-const API_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const STORAGE_KEY = "16a0_auth";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
