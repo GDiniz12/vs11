@@ -1,8 +1,8 @@
 export type PositionCode =
-  | "GOL" | "LD" | "ZAG" | "LE" | "ALA" | "LIB"
+  | "GOL" | "LD" | "ZAG" | "LE"
   | "VOL" | "MC" | "MEI"
   | "ME" | "MD"
-  | "PE" | "PD" | "CA" | "SA";
+  | "PE" | "PD" | "CA";
 
 export type FormationType = "4-3-3" | "4-4-2" | "3-4-3" | "3-5-2" | "5-4-1" | "4-2-3-1";
 export type GameMode = "classic" | "hardcore";

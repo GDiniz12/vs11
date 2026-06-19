@@ -24,8 +24,6 @@ export const POSITION_LABELS_MAP: Record<string, Record<PositionCode, string>> =
     LD: "RB",
     ZAG: "CB",
     LE: "LB",
-    ALA: "WB",
-    LIB: "SW",
     VOL: "CDM",
     MC: "CM",
     MEI: "CAM",
@@ -34,15 +32,12 @@ export const POSITION_LABELS_MAP: Record<string, Record<PositionCode, string>> =
     PE: "LW",
     PD: "RW",
     CA: "ST",
-    SA: "SS",
   },
   pt: {
     GOL: "GOL",
     ZAG: "ZAG",
     LD: "LD",
     LE: "LE",
-    ALA: "ALA",
-    LIB: "LIB",
     VOL: "VOL",
     MC: "MC",
     ME: "ME",
@@ -51,7 +46,6 @@ export const POSITION_LABELS_MAP: Record<string, Record<PositionCode, string>> =
     CA: "CA",
     PD: "PD",
     PE: "PE",
-    SA: "SA",
   },
 };
 
@@ -173,8 +167,6 @@ export const POSITION_COLORS: Record<PositionCode, string> = {
   LD: "#3b82f6",
   ZAG: "#3b82f6",
   LE: "#3b82f6",
-  ALA: "#3b82f6",
-  LIB: "#3b82f6",
   VOL: "#10b981",
   MC: "#10b981",
   MEI: "#8b5cf6",
@@ -183,5 +175,4 @@ export const POSITION_COLORS: Record<PositionCode, string> = {
   PE: "#ef4444",
   PD: "#ef4444",
   CA: "#ef4444",
-  SA: "#ef4444",
 };
