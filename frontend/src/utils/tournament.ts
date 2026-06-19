@@ -625,13 +625,13 @@ export function generateBrasileirao(
 export function generateOnlineTradicional(humanTeams: any[], allBots: any[], difficulty: string) {
   const botsCount = 36 - humanTeams.length;
   const bots = shuffleArray(allBots).slice(0, botsCount).map(b => ({
-    name: b.name, 
-    strength: b.players.reduce((s: number, p: any) => s + p.overall, 0) / b.players.length, 
-    isBot: true, tactic: 'balanced' as TacticType, chemistry: calculateBotChemistry(b.players), players: b.players
+    name: b.name,
+    strength: b.players.reduce((s: number, p: any) => s + p.overall, 0) / b.players.length,
+    isBot: true, tactic: 'balanced' as TacticType, chemistry: calculateBotChemistry(b.players), players: b.players, managerBonus: 0
   }));
   
   const humans = humanTeams.map(h => ({
-    name: h.nickname, strength: h.strength, isBot: false, tactic: h.tactic as TacticType, chemistry: h.chemistry, players: h.players
+    name: h.nickname, strength: h.strength, isBot: false, tactic: h.tactic as TacticType, chemistry: h.chemistry, players: h.players, managerBonus: h.managerBonus ?? 0
   }));
   
   const teams = shuffleArray([...humans, ...bots]);
@@ -656,7 +656,7 @@ export function generateOnlineTradicional(humanTeams: any[], allBots: any[], dif
       const actualAway = round % 2 === 0 ? away : home;
 
       const { homeGoals, awayGoals, events } = simulateMatch(
-        actualHome.strength, actualAway.strength, actualHome.tactic, actualAway.tactic, !actualHome.isBot, !actualAway.isBot, difficulty as DifficultyType, actualHome.chemistry, actualAway.chemistry, actualHome.players, actualAway.players
+        actualHome.strength, actualAway.strength, actualHome.tactic, actualAway.tactic, !actualHome.isBot, !actualAway.isBot, difficulty as DifficultyType, actualHome.chemistry, actualAway.chemistry, actualHome.players, actualAway.players, actualHome.managerBonus ?? 0, actualAway.managerBonus ?? 0
       );
 
       const match: MatchResult = { homeTeam: actualHome.name, awayTeam: actualAway.name, homeGoals, awayGoals, events };
