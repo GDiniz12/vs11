@@ -14,6 +14,7 @@ interface AuthContextType {
   login: (nickname: string, password: string) => Promise<{ success: boolean; message?: string }>;
   register: (nickname: string, password: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => void;
+  updateRating: (newRating: number) => void;
   isLoading: boolean;
 }
 
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => ({ success: false }),
   register: async () => ({ success: false }),
   logout: () => {},
+  updateRating: () => {},
   isLoading: true,
 });
 
@@ -94,8 +96,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch {}
   }, []);
 
+  const updateRating = useCallback((newRating: number) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, rating: newRating };
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...parsed, user: updated }));
+        }
+      } catch {}
+      return updated;
+    });
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, updateRating, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

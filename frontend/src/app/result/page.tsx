@@ -13,34 +13,36 @@ import FootballPitch from "@/components/FootballPitch";
 import TournamentBracket from "@/components/TournamentBracket";
 import { calculateTeamChemistry } from "@/utils/helpers";
 
-const API_URL = process.env.NEXT_PUBLIC_SOCKET_URL || "http://localhost:3001";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
 export default function ResultPage() {
   const router = useRouter();
   const { lang } = useLanguage();
   const { socket, currentRoom, setCurrentRoom, clearSession } = useSocket();
-  const { user, token } = useAuth();
+  const { user, token, updateRating } = useAuth();
   const ratingSubmitted = useRef(false);
 
   const {
     slots, userTeamName, phase,
-    knockoutRounds, stats, isChampion,
-    isRanked,
+    knockoutRounds, stats, isChampion, difficulty,
     clearSave, formation, manager
   } = useGame();
 
   const isOnline = !!currentRoom;
 
   useEffect(() => {
-    if (!isRanked || !user || !token || ratingSubmitted.current) return;
+    if (!user || !token || ratingSubmitted.current) return;
 
-    const multiplier = isOnline ? 2 : 1;
-    const delta =
-      stats.wins * 30 * multiplier +
-      stats.losses * -15 * multiplier +
-      stats.draws * 5 * multiplier +
-      (isChampion ? 100 * multiplier : 0);
+    let winPts: number, drawPts: number, lossPts: number;
+    if (isOnline) {
+      winPts = 100; drawPts = 30; lossPts = -50;
+    } else {
+      if (difficulty === 'easy')       { winPts = 15;  drawPts = 3;  lossPts = -7;  }
+      else if (difficulty === 'impossible') { winPts = 60;  drawPts = 10; lossPts = -30; }
+      else                             { winPts = 30;  drawPts = 5;  lossPts = -15; }
+    }
 
+    const delta = stats.wins * winPts + stats.draws * drawPts + stats.losses * lossPts;
     if (delta === 0) return;
     ratingSubmitted.current = true;
 
@@ -48,8 +50,11 @@ export default function ResultPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify({ delta }),
-    }).catch(() => {});
-  }, [isRanked, user, token, stats, isChampion, isOnline]);
+    })
+      .then((res) => res.json())
+      .then((data) => { if (data.user) updateRating(data.user.rating); })
+      .catch(() => {});
+  }, [user, token, stats, isOnline, difficulty]);
 
   const handleBackToHome = () => {
     // Limpa a sala online (se houver) para não poluir o modo offline
