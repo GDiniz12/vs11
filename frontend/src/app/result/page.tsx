@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useGame } from "@/context/GameContext";
@@ -11,6 +11,7 @@ import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import FootballPitch from "@/components/FootballPitch";
 import TournamentBracket from "@/components/TournamentBracket";
+import SupportModal, { shouldShowSupportModal, markSupportModalShown } from "@/components/SupportModal";
 import { calculateTeamChemistry } from "@/utils/helpers";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -42,6 +43,7 @@ export default function ResultPage() {
   const { socket, currentRoom, setCurrentRoom, clearSession } = useSocket();
   const { user, token, updateRating } = useAuth();
   const ratingSubmitted = useRef(false);
+  const [showSupportModal, setShowSupportModal] = useState(false);
 
   const {
     slots, userTeamName, phase,
@@ -67,6 +69,16 @@ export default function ResultPage() {
       .then((data) => { if (data.user) updateRating(data.user.rating); })
       .catch(() => {});
   }, [user, token, isRanked, stats, isOnline, difficulty]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (shouldShowSupportModal()) {
+        markSupportModalShown();
+        setShowSupportModal(true);
+      }
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleBackToHome = () => {
     // Limpa a sala online (se houver) para não poluir o modo offline
@@ -274,6 +286,8 @@ export default function ResultPage() {
             <TournamentBracket rounds={knockoutRounds} />
          </div>
       )}
+
+      <SupportModal isOpen={showSupportModal} onClose={() => setShowSupportModal(false)} />
     </div>
   );
 }
