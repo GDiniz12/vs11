@@ -16,13 +16,14 @@ import { calculateTeamChemistry } from "@/utils/helpers";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
-type RatingBreakdown = { winPts: number; drawPts: number; lossPts: number; delta: number };
+type RatingBreakdown = { winPts: number; drawPts: number; lossPts: number; base: number; delta: number };
 
 function calcRating(
   stats: { wins: number; draws: number; losses: number },
   isOnline: boolean,
   difficulty: string,
-  isHardcore: boolean
+  isHardcore: boolean,
+  isChampion: boolean
 ): RatingBreakdown {
   let winPts: number, drawPts: number, lossPts: number;
   if (isOnline) {
@@ -34,9 +35,10 @@ function calcRating(
   } else {
     winPts = 30; drawPts = 5; lossPts = -15;
   }
-  const base = stats.wins * winPts + stats.draws * drawPts + stats.losses * lossPts;
-  const delta = isHardcore ? Math.round(base * 1.35) : base;
-  return { winPts, drawPts, lossPts, delta };
+  const raw = stats.wins * winPts + stats.draws * drawPts + stats.losses * lossPts;
+  const base = isHardcore ? Math.round(raw * 1.35) : raw;
+  const delta = isChampion ? base * 2 : base;
+  return { winPts, drawPts, lossPts, base, delta };
 }
 
 export default function ResultPage() {
@@ -59,7 +61,7 @@ export default function ResultPage() {
 
   useEffect(() => {
     if (!user || !token || !isRanked || ratingSubmitted.current) return;
-    const { delta } = calcRating(stats, isOnline, difficulty, isHardcore);
+    const { delta } = calcRating(stats, isOnline, difficulty, isHardcore, isChampion);
     if (delta === 0) return;
     ratingSubmitted.current = true;
 
@@ -161,7 +163,7 @@ export default function ResultPage() {
   const teamOvr = Math.round(totalOvr / 11) || 0;
   const teamChemistry = calculateTeamChemistry(slots, formation, manager) || 0;
 
-  const { winPts, drawPts, lossPts, delta: ratingDelta } = calcRating(stats, isOnline, difficulty, isHardcore);
+  const { winPts, drawPts, lossPts, base: ratingBase, delta: ratingDelta } = calcRating(stats, isOnline, difficulty, isHardcore, isChampion);
 
   return (
     <div className="min-h-screen bg-[#00183F] p-4 md:p-12 font-sans text-white">
@@ -195,16 +197,27 @@ export default function ResultPage() {
             transition={{ type: "spring", stiffness: 120 }}
           >
             <div className={`border-4 border-[#00183F] shadow-[8px_8px_0_0_#00183F] ${ratingDelta >= 0 ? "bg-emerald-500" : "bg-rose-600"} text-white`}>
+              {isChampion && (
+                <div className="bg-amber-400 text-[#00183F] text-center py-1 font-black uppercase text-xs tracking-widest border-b-4 border-[#00183F]">
+                  {lang === 'pt' ? '🏆 BÔNUS DE CAMPEÃO — PONTUAÇÃO DOBRADA!' : '🏆 CHAMPION BONUS — POINTS DOUBLED!'}
+                </div>
+              )}
               <div className="flex items-center justify-between px-6 py-4 gap-4 flex-wrap">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-widest opacity-80">{t.ratingTitle}</p>
-                  <p className="text-5xl font-black tracking-tighter leading-none mt-1">
-                    {ratingDelta >= 0 ? "+" : ""}{ratingDelta}
-                  </p>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <p className="text-5xl font-black tracking-tighter leading-none">
+                      {ratingDelta >= 0 ? "+" : ""}{ratingDelta}
+                    </p>
+                    {isChampion && (
+                      <span className="text-sm font-black opacity-70 line-through">{ratingBase >= 0 ? "+" : ""}{ratingBase}</span>
+                    )}
+                  </div>
                   <p className="text-xs font-bold opacity-70 mt-1">
                     {t.wins} ×{winPts >= 0 ? "+" : ""}{winPts} &nbsp;|&nbsp;
                     {t.draws} ×{drawPts >= 0 ? "+" : ""}{drawPts} &nbsp;|&nbsp;
                     {t.losses} ×{lossPts}
+                    {isChampion && <span className="ml-2 font-black opacity-90">&nbsp;×2</span>}
                   </p>
                 </div>
                 <div className="text-right">
