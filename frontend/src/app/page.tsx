@@ -217,9 +217,9 @@ export default function HomePage() {
         transition={{ duration: 0.65, ease: "easeOut" }}
       >
         {/* Badge */}
-        <div className="self-start flex items-center gap-2 bg-[#0033A0]/70 border-2 border-[#0033A0] px-3 py-1 mb-7">
-          <div className="w-1.5 h-1.5 bg-amber-400 flex-shrink-0" />
-          <span className="text-white font-black tracking-widest uppercase text-[10px]">{t.badge}</span>
+        <div className="self-start flex items-center gap-2 border-2 border-white/30 px-3 py-1.5 mb-7">
+          <div className="w-2 h-2 bg-amber-400 flex-shrink-0" />
+          <span className="text-white/80 font-bold tracking-widest uppercase text-xs">{t.badge}</span>
         </div>
 
         {/* Logo — displayed inside a white card so the PNG background blends cleanly */}
@@ -260,7 +260,7 @@ export default function HomePage() {
           ].map(({ n, l }) => (
             <div key={l} className="flex-1 max-w-[108px] border-2 border-white/20 bg-white/5 py-3 text-center">
               <p className="text-white font-black text-xl leading-none">{n}</p>
-              <p className="text-gray-400 text-[9px] font-bold uppercase tracking-wider mt-1.5 leading-tight">{l}</p>
+              <p className="text-white/60 text-[9px] font-bold uppercase tracking-wider mt-1.5 leading-tight">{l}</p>
             </div>
           ))}
         </div>
