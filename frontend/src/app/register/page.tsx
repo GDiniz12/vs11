@@ -20,6 +20,16 @@ const translations = {
     login: "Entrar",
     back: "Voltar",
     passwordMismatch: "As senhas não coincidem.",
+    errors: {
+      missing_fields: "Nickname e senha são obrigatórios.",
+      nickname_too_short: "Nickname deve ter no mínimo 3 caracteres.",
+      password_too_short: "Senha deve ter no mínimo 6 caracteres.",
+      nickname_taken: "Esse nickname já está em uso.",
+      rate_limited: "Muitas tentativas. Tente novamente em instantes.",
+      connection_error: "Erro de conexão com o servidor.",
+      server_error: "Erro interno do servidor.",
+      fallback: "Erro ao criar conta.",
+    } as Record<string, string>,
   },
   en: {
     title: "Create Account",
@@ -34,6 +44,16 @@ const translations = {
     login: "Login",
     back: "Back",
     passwordMismatch: "Passwords do not match.",
+    errors: {
+      missing_fields: "Nickname and password are required.",
+      nickname_too_short: "Nickname must be at least 3 characters.",
+      password_too_short: "Password must be at least 6 characters.",
+      nickname_taken: "That nickname is already taken.",
+      rate_limited: "Too many attempts. Please try again shortly.",
+      connection_error: "Connection error with the server.",
+      server_error: "Internal server error.",
+      fallback: "Failed to create account.",
+    } as Record<string, string>,
   },
 };
 
@@ -65,7 +85,7 @@ export default function RegisterPage() {
     if (result.success) {
       router.push("/");
     } else {
-      setError(result.message || "Erro ao criar conta.");
+      setError(t.errors[result.code || ""] || result.message || t.errors.fallback);
     }
   };
 

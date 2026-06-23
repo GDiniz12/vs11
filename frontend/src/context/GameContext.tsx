@@ -31,7 +31,15 @@ interface GameState {
   isChampion: boolean;
   stats: GameStats;
   userTeamName: string;
+  gameId: string;
 }
+
+// Stable per-game id used to make ranked-rating submission idempotent
+// (the server rejects a duplicate gameId, so a refresh can't double-count).
+const newGameId = () =>
+  (typeof crypto !== 'undefined' && crypto.randomUUID)
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
 interface GameContextType extends GameState {
   setFormation: (f: FormationType) => void;
@@ -80,6 +88,7 @@ const initialState: GameState = {
   isChampion: false,
   stats: { ...initialStats },
   userTeamName: '',
+  gameId: '',
 };
 
 const GameContext = createContext<GameContextType | null>(null);
@@ -216,33 +225,94 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const setOnlineTournamentState = useCallback((data: any, nickname: string) => {
     setState((prev) => {
-      const ko = data.knockoutRounds || [];
       const newStats = { wins: 0, losses: 0, draws: 0, goalsScored: 0, goalsConceded: 0 };
 
-      // Contabiliza pontos na Liga Tradicional
-      const uMatches = data.mode === 'tradicional' ? (data.playerMatches[nickname] || []) : [];
-      uMatches.forEach((m: any) => {
-        const isHome = m.homeTeam === nickname;
-        const userGoals = isHome ? m.homeGoals : m.awayGoals;
-        const oppGoals = isHome ? m.awayGoals : m.homeGoals;
-        newStats.goalsScored += userGoals;
-        newStats.goalsConceded += oppGoals;
-        if (userGoals > oppGoals) newStats.wins++;
-        else if (userGoals < oppGoals) newStats.losses++;
-        else newStats.draws++;
-      });
+      const addMatchStats = (matches: any[]) => {
+        matches.forEach((m: any) => {
+          const isHome = m.homeTeam === nickname;
+          const ug = isHome ? m.homeGoals : m.awayGoals;
+          const og = isHome ? m.awayGoals : m.homeGoals;
+          newStats.goalsScored += ug; newStats.goalsConceded += og;
+          if (ug > og) newStats.wins++;
+          else if (ug < og) newStats.losses++;
+          else newStats.draws++;
+        });
+      };
 
-      // No modo guerra, mostra TODOS os confrontos para todos os jogadores
+      // BRASILEIRÃO ONLINE
+      if (data.tournamentMode === 'brasileirao') {
+        const uMatches: any[] = data.playerMatches?.[nickname] || [];
+        addMatchStats(uMatches);
+        const brasilRounds = (data.brasilRounds || []).map((r: any) => ({
+          ...r,
+          userMatch: (r.allMatches || []).find((m: any) => m.homeTeam === nickname || m.awayTeam === nickname) || null,
+        }));
+        const isChampion = (data.table?.length ?? 0) > 0 && data.table[0].name === nickname;
+        return {
+          ...prev,
+          phase: 'brasileirao' as const,
+          brasilRounds,
+          leagueTable: data.table || [],
+          knockoutRounds: [],
+          userMatches: uMatches,
+          userTeamName: nickname,
+          isChampion,
+          isRanked: !!data.isRanked,
+          tournamentMode: 'brasileirao' as const,
+          stats: newStats,
+        };
+      }
+
+      // COPA DO MUNDO ONLINE
+      if (data.tournamentMode === 'copa-do-mundo') {
+        const uMatches: any[] = data.playerMatches?.[nickname] || [];
+        addMatchStats(uMatches);
+
+        const copaGroups = (data.copaGroups || []).map((g: any) => ({
+          ...g,
+          teams: (g.teams || []).map((t: any) => ({ ...t, isUser: t.name === nickname })),
+        }));
+
+        const allKo = data.knockoutRounds || [];
+        const koFiltered = allKo.filter((r: any) => r.leg1.homeTeam === nickname || r.leg1.awayTeam === nickname);
+        const koWithUserContext = koFiltered.map((r: any) => {
+          const isLeg1Home = r.leg1.homeTeam === nickname;
+          const myOpponent = isLeg1Home ? r.leg1.awayTeam : r.leg1.homeTeam;
+          return { ...r, isUserMatch: true, userAdvanced: r.winner === nickname, userOpponent: myOpponent };
+        });
+
+        const isChampion = allKo.length > 0 && allKo[allKo.length - 1].winner === nickname;
+        const qualifiedTeams = (data.copaGroups || []).flatMap((g: any) => (g.teams || []).slice(0, 2));
+
+        return {
+          ...prev,
+          phase: 'copa-group-stage' as const,
+          copaGroups,
+          leagueTable: qualifiedTeams,
+          knockoutRounds: koWithUserContext,
+          userMatches: uMatches,
+          userTeamName: nickname,
+          isChampion,
+          isRanked: !!data.isRanked,
+          tournamentMode: 'copa-do-mundo' as const,
+          stats: newStats,
+        };
+      }
+
+      // SUPER MUNDIAL / LOUCO / GUERRA
+      const ko = data.knockoutRounds || [];
+      const uMatches = data.mode === 'tradicional' ? (data.playerMatches?.[nickname] || []) : [];
+      addMatchStats(uMatches);
+
       const relevantMatches = data.mode === 'guerra' ? ko : ko.filter((r: any) => r.leg1.homeTeam === nickname || r.leg1.awayTeam === nickname);
 
       const koWithUserContext = relevantMatches.map((r: any) => {
         const isUserInMatch = r.leg1.homeTeam === nickname || r.leg1.awayTeam === nickname;
         const isLeg1Home = r.leg1.homeTeam === nickname;
-        const myOpponent = isUserInMatch 
+        const myOpponent = isUserInMatch
           ? (isLeg1Home ? r.leg1.awayTeam : r.leg1.homeTeam)
           : r.leg1.awayTeam;
 
-        // Só contabiliza stats de partidas que o jogador participou
         if (isUserInMatch) {
           const ug1 = isLeg1Home ? r.leg1.homeGoals : r.leg1.awayGoals;
           const og1 = isLeg1Home ? r.leg1.awayGoals : r.leg1.homeGoals;
@@ -262,7 +332,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
           ...r,
           isUserMatch: isUserInMatch,
           userAdvanced: isUserInMatch ? r.winner === nickname : false,
-          userOpponent: myOpponent
+          userOpponent: myOpponent,
         };
       });
 
@@ -270,14 +340,15 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
       return {
         ...prev,
-        phase: data.mode === 'guerra' ? 'knockout' : 'league',
+        phase: data.mode === 'guerra' ? 'knockout' as const : 'league' as const,
         leagueTable: data.mode === 'tradicional' ? data.table : [],
         userMatches: uMatches,
         knockoutRounds: koWithUserContext,
         userTeamName: nickname,
         isChampion,
         isRanked: !!data.isRanked,
-        stats: newStats // <- A mágica final para a página de resultados!
+        tournamentMode: (data.tournamentMode || 'super-mundial') as TournamentMode,
+        stats: newStats,
       };
     });
   }, []);
@@ -299,6 +370,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
       isChampion: false,
       stats: { ...initialStats },
       userTeamName: TRANSLATIONS[lang].your_team,
+      gameId: newGameId(),
     }));
     setUndoStack([]);
   }, [lang]);

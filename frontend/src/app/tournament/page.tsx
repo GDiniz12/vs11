@@ -32,12 +32,21 @@ export default function TournamentPage() {
   const [showTable, setShowTable] = useState(false);
   const matchesEndRef = useRef<HTMLDivElement>(null);
 
+  // Guard (A4): this page renders the Super Mundial / Louco league. If we land
+  // here in a mode that has its own bracket (e.g. after a refresh restored the
+  // wrong phase), redirect instead of generating an incorrect league.
   useEffect(() => {
+    if (tournamentMode === 'copa-do-mundo') router.replace('/copa-group');
+    else if (tournamentMode === 'brasileirao') router.replace('/brasileirao');
+  }, [tournamentMode, router]);
+
+  useEffect(() => {
+    if (tournamentMode === 'copa-do-mundo' || tournamentMode === 'brasileirao') return;
     // Se o jogo NÃO for online e a tabela não tiver carregado, simula localmente!
     if (leagueTable.length === 0 && !currentRoom) {
       startLeaguePhase();
     }
-  }, [leagueTable.length, startLeaguePhase, currentRoom]);
+  }, [leagueTable.length, startLeaguePhase, currentRoom, tournamentMode]);
 
   useEffect(() => {
     if (userMatches.length === 0) return;

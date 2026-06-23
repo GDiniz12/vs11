@@ -700,7 +700,7 @@ export function generateOnlineTradicional(humanTeams: any[], allBots: any[], dif
          const t2 = top16[i+1];
          if (!t1 || !t2) continue;
 
-         const res1 = simulateMatch(t1.strength, t2.strength, t1.tactic, t2.tactic, !t1.isBot, !t2.isBot, difficulty as DifficultyType, t1.chemistry, t2.chemistry, t1.players, t2.players);
+         const res1 = simulateMatch(t1.strength, t2.strength, t1.tactic, t2.tactic, !t1.isBot, !t2.isBot, difficulty as DifficultyType, t1.chemistry, t2.chemistry, t1.players, t2.players, t1.managerBonus ?? 0, t2.managerBonus ?? 0);
          const leg1: MatchResult = { homeTeam: t1.name, awayTeam: t2.name, homeGoals: res1.homeGoals, awayGoals: res1.awayGoals, events: res1.events };
 
          let winner, leg2: MatchResult | undefined;
@@ -717,7 +717,7 @@ export function generateOnlineTradicional(humanTeams: any[], allBots: any[], dif
                winner = pen.homePen > pen.awayPen ? t1 : t2;
              }
          } else {
-             const res2 = simulateMatch(t2.strength, t1.strength, t2.tactic, t1.tactic, !t2.isBot, !t1.isBot, difficulty as DifficultyType, t2.chemistry, t1.chemistry, t2.players, t1.players);
+             const res2 = simulateMatch(t2.strength, t1.strength, t2.tactic, t1.tactic, !t2.isBot, !t1.isBot, difficulty as DifficultyType, t2.chemistry, t1.chemistry, t2.players, t1.players, t2.managerBonus ?? 0, t1.managerBonus ?? 0);
              leg2 = { homeTeam: t2.name, awayTeam: t1.name, homeGoals: res2.homeGoals, awayGoals: res2.awayGoals, events: res2.events };
 
              const agg1 = leg1.homeGoals + (leg2 ? leg2.awayGoals : 0);
@@ -832,4 +832,217 @@ export function generateOnlineGuerra(humanTeams: any[]) {
   }
 
   return { knockoutRounds: roundsData };
+}
+
+// =========================================================
+// ONLINE: BRASILEIRÃO (20 times, pontos corridos, 38 rodadas)
+// =========================================================
+
+export function generateOnlineBrasileirao(humanTeams: any[], allBots: any[], difficulty: string) {
+  const botsCount = Math.max(0, 20 - humanTeams.length);
+  const bots = shuffleArray(allBots).slice(0, botsCount).map(b => ({
+    name: b.name,
+    strength: b.players.reduce((s: number, p: any) => s + p.overall, 0) / b.players.length,
+    isBot: true, tactic: 'balanced' as TacticType, chemistry: calculateBotChemistry(b.players), players: b.players, managerBonus: 0,
+  }));
+
+  const humans = humanTeams.map(h => ({
+    name: h.nickname, strength: h.strength, isBot: false, tactic: h.tactic as TacticType, chemistry: h.chemistry, players: h.players, managerBonus: h.managerBonus ?? 0,
+  }));
+
+  const allTeams = shuffleArray([...humans, ...bots]);
+
+  const standings: Record<string, any> = {};
+  allTeams.forEach(t => {
+    standings[t.name] = { name: t.name, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0, isUser: !t.isBot, avgOverall: t.strength, players: t.players };
+  });
+
+  const playerMatches: Record<string, MatchResult[]> = {};
+  humanTeams.forEach(h => { playerMatches[h.nickname] = []; });
+
+  const updateStandings = (name: string, gf: number, ga: number) => {
+    const s = standings[name];
+    s.played++; s.goalsFor += gf; s.goalsAgainst += ga;
+    s.goalDifference = s.goalsFor - s.goalsAgainst;
+    if (gf > ga) { s.won++; s.points += 3; }
+    else if (gf === ga) { s.drawn++; s.points += 1; }
+    else { s.lost++; }
+  };
+
+  const sortedSnapshot = (): LeagueTeam[] =>
+    Object.values(standings).map((s) => ({ ...s })).sort(
+      (a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor
+    );
+
+  const brasilRounds: BrasileiraoRound[] = [];
+  const fixed = allTeams[0];
+  const rotating = [...allTeams.slice(1)];
+
+  const runHalf = (startRound: number, swapHomeAway: boolean) => {
+    const rot = [...rotating];
+    for (let r = 0; r < 19; r++) {
+      const current = [fixed, ...rot];
+      const allMatchesRound: MatchResult[] = [];
+
+      for (let i = 0; i < 10; i++) {
+        const a = current[i];
+        const b = current[19 - i];
+        const home = swapHomeAway ? b : a;
+        const away = swapHomeAway ? a : b;
+
+        const { homeGoals, awayGoals, events } = simulateMatch(
+          home.strength, away.strength, home.tactic, away.tactic,
+          !home.isBot, !away.isBot, difficulty as DifficultyType,
+          home.chemistry, away.chemistry, home.players, away.players,
+          home.managerBonus ?? 0, away.managerBonus ?? 0,
+        );
+
+        const match: MatchResult = { homeTeam: home.name, awayTeam: away.name, homeGoals, awayGoals, events };
+        allMatchesRound.push(match);
+        updateStandings(home.name, homeGoals, awayGoals);
+        updateStandings(away.name, awayGoals, homeGoals);
+
+        if (!home.isBot && playerMatches[home.name]) playerMatches[home.name].push(match);
+        if (!away.isBot && playerMatches[away.name]) playerMatches[away.name].push(match);
+      }
+
+      brasilRounds.push({ roundNumber: startRound + r, userMatch: null, allMatches: allMatchesRound, standingsAfterRound: sortedSnapshot() });
+      rot.unshift(rot.pop()!);
+    }
+  };
+
+  runHalf(1, false);
+  runHalf(20, true);
+
+  return { brasilRounds, table: sortedSnapshot(), playerMatches };
+}
+
+// =========================================================
+// ONLINE: COPA DO MUNDO (32 times, 8 grupos, fase mata-mata)
+// =========================================================
+
+export function generateOnlineCopa(humanTeams: any[], allBots: any[], difficulty: string) {
+  const botsCount = Math.max(0, 32 - humanTeams.length);
+  const bots = shuffleArray(allBots).slice(0, botsCount).map(b => ({
+    name: b.name,
+    strength: b.players.reduce((s: number, p: any) => s + p.overall, 0) / b.players.length,
+    isBot: true, tactic: 'balanced' as TacticType, chemistry: calculateBotChemistry(b.players), players: b.players, managerBonus: 0,
+  }));
+
+  const humans = humanTeams.map(h => ({
+    name: h.nickname, strength: h.strength, isBot: false, tactic: h.tactic as TacticType, chemistry: h.chemistry, players: h.players, managerBonus: h.managerBonus ?? 0,
+  }));
+
+  const allTeams = shuffleArray([...humans, ...bots]).slice(0, 32);
+
+  const playerMatches: Record<string, MatchResult[]> = {};
+  humanTeams.forEach(h => { playerMatches[h.nickname] = []; });
+
+  const GROUP_NAMES = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
+  const copaGroups: CopaGroup[] = [];
+  const qualifiedTeams: any[] = [];
+
+  for (let g = 0; g < 8; g++) {
+    const groupTeams = allTeams.slice(g * 4, (g + 1) * 4);
+    const groupStandings: Record<string, any> = {};
+    groupTeams.forEach(t => {
+      groupStandings[t.name] = { name: t.name, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0, isUser: !t.isBot, avgOverall: t.strength, players: t.players };
+    });
+
+    const groupMatches: MatchResult[] = [];
+
+    for (let i = 0; i < groupTeams.length; i++) {
+      for (let j = i + 1; j < groupTeams.length; j++) {
+        const home = groupTeams[i];
+        const away = groupTeams[j];
+
+        const { homeGoals, awayGoals, events } = simulateMatch(
+          home.strength, away.strength, home.tactic, away.tactic,
+          !home.isBot, !away.isBot, difficulty as DifficultyType,
+          home.chemistry, away.chemistry, home.players, away.players,
+          home.managerBonus ?? 0, away.managerBonus ?? 0,
+        );
+
+        const match: MatchResult = { homeTeam: home.name, awayTeam: away.name, homeGoals, awayGoals, events };
+        groupMatches.push(match);
+
+        const updateS = (name: string, gf: number, ga: number) => {
+          const s = groupStandings[name];
+          s.played++; s.goalsFor += gf; s.goalsAgainst += ga;
+          s.goalDifference = s.goalsFor - s.goalsAgainst;
+          if (gf > ga) { s.won++; s.points += 3; }
+          else if (gf === ga) { s.drawn++; s.points += 1; }
+          else { s.lost++; }
+        };
+        updateS(home.name, homeGoals, awayGoals);
+        updateS(away.name, awayGoals, homeGoals);
+
+        if (!home.isBot && playerMatches[home.name]) playerMatches[home.name].push(match);
+        if (!away.isBot && playerMatches[away.name]) playerMatches[away.name].push(match);
+      }
+    }
+
+    const sortedGroup = Object.values(groupStandings).sort(
+      (a: any, b: any) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor
+    ) as LeagueTeam[];
+
+    copaGroups.push({ name: GROUP_NAMES[g], teams: sortedGroup, matches: groupMatches });
+    const q1 = allTeams.find(t => t.name === sortedGroup[0].name);
+    const q2 = allTeams.find(t => t.name === sortedGroup[1].name);
+    if (q1) qualifiedTeams.push(q1);
+    if (q2) qualifiedTeams.push(q2);
+  }
+
+  const knockoutRounds: KnockoutRound[] = [];
+  const stageNames = ["Round of 16", "Quarter-finals", "Semi-finals", "Final"];
+
+  // Authentic FIFA cross-matching so group rivals don't meet in the Round of 16.
+  // qualifiedTeams order: [A1,A2,B1,B2,C1,C2,D1,D2,E1,E2,F1,F2,G1,G2,H1,H2]
+  // Reorder to: [A1,B2, C1,D2, E1,F2, G1,H2, B1,A2, D1,C2, F1,E2, H1,G2]
+  const qt = qualifiedTeams;
+  let remaining = qt.length >= 16
+    ? [qt[0], qt[3], qt[4], qt[7], qt[8], qt[11], qt[12], qt[15],
+       qt[2], qt[1], qt[6], qt[5], qt[10], qt[9], qt[14], qt[13]]
+    : [...qualifiedTeams];
+
+  for (let stage = 0; stage < stageNames.length; stage++) {
+    const stageName = stageNames[stage];
+    const nextRound: any[] = [];
+
+    for (let i = 0; i < remaining.length; i += 2) {
+      const t1 = remaining[i];
+      const t2 = remaining[i + 1];
+      if (!t1 || !t2) continue;
+
+      const { homeGoals, awayGoals, events } = simulateMatch(
+        t1.strength, t2.strength, t1.tactic, t2.tactic,
+        !t1.isBot, !t2.isBot, difficulty as DifficultyType,
+        t1.chemistry, t2.chemistry, t1.players, t2.players,
+        t1.managerBonus ?? 0, t2.managerBonus ?? 0,
+      );
+
+      const leg1: MatchResult = { homeTeam: t1.name, awayTeam: t2.name, homeGoals, awayGoals, events };
+
+      let winner: any;
+      if (homeGoals > awayGoals) winner = t1;
+      else if (awayGoals > homeGoals) winner = t2;
+      else {
+        const pen = simulatePenalties(t1.players || [], t2.players || []);
+        leg1.isPenalties = true;
+        leg1.homePenalties = pen.homePen;
+        leg1.awayPenalties = pen.awayPen;
+        leg1.penaltyEvents = pen.penaltyEvents;
+        winner = pen.homePen > pen.awayPen ? t1 : t2;
+      }
+
+      if (!t1.isBot && playerMatches[t1.name]) playerMatches[t1.name].push(leg1);
+      if (!t2.isBot && playerMatches[t2.name]) playerMatches[t2.name].push(leg1);
+
+      nextRound.push(winner);
+      knockoutRounds.push({ round: stageName, leg1, leg2: undefined, winner: winner.name, userOpponent: t2.name, userAdvanced: false });
+    }
+    remaining = nextRound;
+  }
+
+  return { copaGroups, knockoutRounds, playerMatches };
 }

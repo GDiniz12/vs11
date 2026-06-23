@@ -48,11 +48,12 @@ export default function ResultPage() {
   const { user, token, updateRating } = useAuth();
   const ratingSubmitted = useRef(false);
   const [showSupportModal, setShowSupportModal] = useState(false);
+  const [ratingError, setRatingError] = useState(false);
 
   const {
     slots, userTeamName, phase,
     knockoutRounds, stats, isChampion, difficulty, gameMode,
-    isRanked, tournamentMode,
+    isRanked, tournamentMode, gameId,
     clearSave, formation, manager
   } = useGame();
 
@@ -60,20 +61,29 @@ export default function ResultPage() {
   const isHardcore = gameMode === 'hardcore';
 
   useEffect(() => {
-    if (!user || !token || !isRanked || ratingSubmitted.current) return;
+    if (!user || !token || !isRanked || !gameId || ratingSubmitted.current) return;
     const { delta } = calcRating(stats, isOnline, difficulty, isHardcore, isChampion);
     if (delta === 0) return;
     ratingSubmitted.current = true;
 
+    // The server recomputes the delta from these facts and applies it at most
+    // once per gameId — the client value is only used for the on-screen preview.
     fetch(`${API_URL}/api/auth/rating`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ delta }),
+      body: JSON.stringify({
+        gameId,
+        wins: stats.wins, draws: stats.draws, losses: stats.losses,
+        isOnline, difficulty, isHardcore, isChampion,
+      }),
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("rating save failed");
+        return res.json();
+      })
       .then((data) => { if (data.user) updateRating(data.user.rating); })
-      .catch(() => {});
-  }, [user, token, isRanked, stats, isOnline, difficulty]);
+      .catch(() => { setRatingError(true); ratingSubmitted.current = false; });
+  }, [user, token, isRanked, gameId, stats, isOnline, difficulty]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -125,6 +135,7 @@ export default function ResultPage() {
       ratingTotal: "Rating atual",
       wins: "Vitórias",
       losses: "Derrotas",
+      ratingError: "Não foi possível salvar o resultado ranqueado. Verifique sua conexão.",
     },
     en: {
       title: tournamentTitle,
@@ -144,6 +155,7 @@ export default function ResultPage() {
       ratingTotal: "Current rating",
       wins: "Wins",
       losses: "Losses",
+      ratingError: "Couldn't save your ranked result. Please check your connection.",
     },
   }[lang];
 
@@ -167,6 +179,11 @@ export default function ResultPage() {
 
   return (
     <div className="min-h-screen bg-[#00183F] p-4 md:p-12 font-sans text-white">
+      {ratingError && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-rose-600 text-white px-4 py-3 font-bold text-sm border-2 border-white shadow-[4px_4px_0_0_rgba(0,0,0,0.5)] max-w-md text-center">
+          {t.ratingError}
+        </div>
+      )}
       <div className="max-w-3xl mx-auto flex flex-col gap-8">
         
         {/* Cabeçalho */}

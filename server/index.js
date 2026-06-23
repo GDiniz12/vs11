@@ -5,6 +5,15 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
 
+// Fail fast if critical secrets are missing — a missing JWT_SECRET would
+// otherwise produce 500s at request time or, worse, forgeable tokens.
+const REQUIRED_ENV = ['JWT_SECRET', 'DATABASE_URL'];
+const missingEnv = REQUIRED_ENV.filter((k) => !process.env[k]);
+if (missingEnv.length > 0) {
+  console.error(`FATAL: variáveis de ambiente ausentes: ${missingEnv.join(', ')}. Verifique o arquivo .env.`);
+  process.exit(1);
+}
+
 const app = express();
 
 // Pega a URL do .env ou libera para todos (*) caso não encontre
@@ -26,6 +35,14 @@ const io = new Server(server, {
 
 const rooms = {};
 const disconnectTimers = {}; // Timers de desconexão pendentes para reconexão mobile
+
+// The lobby rating is supplied by the client and is display-only. Sanitize it
+// so a forged payload can't inject a non-numeric / absurd value into the room
+// broadcast. (SEC3 — full authoritative rating requires socket auth / SEC6.)
+function sanitizeRating(value) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null;
+  return Math.max(0, Math.min(100000, Math.round(value)));
+}
 
 io.on('connection', (socket) => {
   console.log('Novo usuário conectado:', socket.id);
@@ -68,7 +85,7 @@ io.on('connection', (socket) => {
       players: [{
         id: socket.id,
         nickname: cleanNickname,
-        rating: data.rating ?? null,
+        rating: sanitizeRating(data.rating),
         isReady: false,
         draftFinished: false,
         teamData: null
@@ -101,7 +118,7 @@ io.on('connection', (socket) => {
     room.players.push({
       id: socket.id,
       nickname: cleanNickname,
-      rating: data.rating ?? null,
+      rating: sanitizeRating(data.rating),
       isReady: false,
       draftFinished: false,
       teamData: null

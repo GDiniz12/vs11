@@ -16,3 +16,14 @@ CREATE TABLE IF NOT EXISTS matches (
   tournament_type VARCHAR(50),
   played_at TIMESTAMP DEFAULT NOW()
 );
+
+-- Records each ranked game whose rating has been applied, so the same game
+-- can never be counted twice (idempotency: e.g. a page refresh on /result).
+CREATE TABLE IF NOT EXISTS rating_events (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  game_id TEXT NOT NULL,
+  delta INTEGER NOT NULL,
+  created_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE (user_id, game_id)
+);

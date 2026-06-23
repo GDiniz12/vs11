@@ -11,8 +11,8 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
-  login: (nickname: string, password: string) => Promise<{ success: boolean; message?: string }>;
-  register: (nickname: string, password: string) => Promise<{ success: boolean; message?: string }>;
+  login: (nickname: string, password: string) => Promise<{ success: boolean; message?: string; code?: string }>;
+  register: (nickname: string, password: string) => Promise<{ success: boolean; message?: string; code?: string }>;
   logout: () => void;
   updateRating: (newRating: number) => void;
   isLoading: boolean;
@@ -64,11 +64,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         body: JSON.stringify({ nickname, password }),
       });
       const data = await res.json();
-      if (!res.ok) return { success: false, message: data.message };
+      if (!res.ok) return { success: false, message: data.message, code: data.code };
       persist(data.token, data.user);
       return { success: true };
     } catch {
-      return { success: false, message: "Erro de conexão com o servidor." };
+      return { success: false, code: "connection_error", message: "Erro de conexão com o servidor." };
     }
   }, []);
 
@@ -80,11 +80,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         body: JSON.stringify({ nickname, password }),
       });
       const data = await res.json();
-      if (!res.ok) return { success: false, message: data.message };
+      if (!res.ok) return { success: false, message: data.message, code: data.code };
       persist(data.token, data.user);
       return { success: true };
     } catch {
-      return { success: false, message: "Erro de conexão com o servidor." };
+      return { success: false, code: "connection_error", message: "Erro de conexão com o servidor." };
     }
   }, []);
 

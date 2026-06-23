@@ -16,6 +16,14 @@ const translations = {
     noAccount: "Não tem conta?",
     register: "Criar conta",
     back: "Voltar",
+    errors: {
+      missing_fields: "Nickname e senha são obrigatórios.",
+      invalid_credentials: "Nickname ou senha incorretos.",
+      rate_limited: "Muitas tentativas. Tente novamente em instantes.",
+      connection_error: "Erro de conexão com o servidor.",
+      server_error: "Erro interno do servidor.",
+      fallback: "Erro ao fazer login.",
+    } as Record<string, string>,
   },
   en: {
     title: "Login",
@@ -26,6 +34,14 @@ const translations = {
     noAccount: "Don't have an account?",
     register: "Sign up",
     back: "Back",
+    errors: {
+      missing_fields: "Nickname and password are required.",
+      invalid_credentials: "Incorrect nickname or password.",
+      rate_limited: "Too many attempts. Please try again shortly.",
+      connection_error: "Connection error with the server.",
+      server_error: "Internal server error.",
+      fallback: "Login failed.",
+    } as Record<string, string>,
   },
 };
 
@@ -49,7 +65,7 @@ export default function LoginPage() {
     if (result.success) {
       router.push("/");
     } else {
-      setError(result.message || "Erro ao fazer login.");
+      setError(t.errors[result.code || ""] || result.message || t.errors.fallback);
     }
   };
 

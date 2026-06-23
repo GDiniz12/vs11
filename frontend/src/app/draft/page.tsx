@@ -8,7 +8,7 @@ import { useSocket } from "@/context/SocketContext";
 import { Player, FormationSlot, TeamData } from "@/types";
 import { getAvailablePositions, getAllTeams, getBrazilianTeams, getCountryEmoji, calculateTeamChemistry, getManagerBonus } from "@/utils/helpers";
 import { calculateTeamStrength, calculateSectorStrengths } from "@/utils/simulation";
-import { generateOnlineGuerra, generateOnlineTradicional } from "@/utils/tournament";
+import { generateOnlineGuerra, generateOnlineTradicional, generateOnlineBrasileirao, generateOnlineCopa } from "@/utils/tournament";
 import { americans, europeans, nationalTeams } from "@/data/data";
 import FootballPitch from "@/components/FootballPitch";
 import TeamCard from "@/components/TeamCard";
@@ -136,6 +136,10 @@ export default function DraftPage() {
       setOnlineTournamentState(data, nickname);
       if (data.mode === 'guerra') {
         router.push("/knockout");
+      } else if (data.tournamentMode === 'brasileirao') {
+        router.push("/brasileirao");
+      } else if (data.tournamentMode === 'copa-do-mundo') {
+        router.push("/copa-group");
       } else {
         router.push("/tournament");
       }
@@ -155,12 +159,21 @@ export default function DraftPage() {
   const handleHostStartSimulation = () => {
     if (!currentRoom || isSimulating) return;
     setIsSimulating(true);
+    const tournamentMode = currentRoom.tournamentMode || 'super-mundial';
+    const isRanked = !!currentRoom.isRanked;
+    const difficulty = currentRoom.difficulty || 'medium';
     if (currentRoom.mode === 'guerra') {
       const data = generateOnlineGuerra(finalPlayersData);
-      socket?.emit("onlineTournamentData", currentRoom.id, { mode: 'guerra', isRanked: !!currentRoom.isRanked, ...data });
+      socket?.emit("onlineTournamentData", currentRoom.id, { mode: 'guerra', tournamentMode, isRanked, ...data });
+    } else if (tournamentMode === 'brasileirao') {
+      const data = generateOnlineBrasileirao(finalPlayersData, allTeams, difficulty);
+      socket?.emit("onlineTournamentData", currentRoom.id, { mode: 'tradicional', tournamentMode, isRanked, ...data });
+    } else if (tournamentMode === 'copa-do-mundo') {
+      const data = generateOnlineCopa(finalPlayersData, allTeams, difficulty);
+      socket?.emit("onlineTournamentData", currentRoom.id, { mode: 'tradicional', tournamentMode, isRanked, ...data });
     } else {
-      const data = generateOnlineTradicional(finalPlayersData, allTeams, currentRoom.difficulty || 'medium');
-      socket?.emit("onlineTournamentData", currentRoom.id, { mode: 'tradicional', isRanked: !!currentRoom.isRanked, ...data });
+      const data = generateOnlineTradicional(finalPlayersData, allTeams, difficulty);
+      socket?.emit("onlineTournamentData", currentRoom.id, { mode: 'tradicional', tournamentMode, isRanked, ...data });
     }
   };
 
