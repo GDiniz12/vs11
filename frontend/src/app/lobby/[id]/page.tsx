@@ -326,11 +326,10 @@ export default function LobbyPage() {
                     {isHost && player.id !== currentRoom.host && (
                       <button
                         onClick={() => handleKickPlayer({ id: player.id, nickname: player.nickname })}
-                        className="group relative w-8 h-8 bg-rose-600 border-2 border-[#00183F] shadow-[3px_3px_0_0_#00183F] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all duration-100 flex items-center justify-center flex-shrink-0"
+                        className="w-8 h-8 bg-white border-2 border-rose-600 shadow-[3px_3px_0_0_#00183F] hover:shadow-none hover:translate-x-[3px] hover:translate-y-[3px] transition-all duration-100 flex items-center justify-center flex-shrink-0"
                         title="Remover jogador"
                       >
-                        <span className="block w-4 h-0.5 bg-white absolute rotate-45 rounded-full" />
-                        <span className="block w-4 h-0.5 bg-white absolute -rotate-45 rounded-full" />
+                        <span className="text-rose-600 font-black text-base leading-none select-none">✕</span>
                       </button>
                     )}
                   </div>
