@@ -243,16 +243,24 @@ export function GameProvider({ children }: { children: ReactNode }) {
       if (data.tournamentMode === 'brasileirao') {
         const uMatches: any[] = data.playerMatches?.[nickname] || [];
         addMatchStats(uMatches);
+
+        // The host sets isUser: !t.isBot, marking ALL humans as "user".
+        // Remap to isUser: t.name === nickname so each client correctly identifies
+        // only themselves in the standings (needed by the brasileirao page).
+        const remapIsUser = (entry: any) => ({ ...entry, isUser: entry.name === nickname });
+
         const brasilRounds = (data.brasilRounds || []).map((r: any) => ({
           ...r,
+          standingsAfterRound: (r.standingsAfterRound || []).map(remapIsUser),
           userMatch: (r.allMatches || []).find((m: any) => m.homeTeam === nickname || m.awayTeam === nickname) || null,
         }));
-        const isChampion = (data.table?.length ?? 0) > 0 && data.table[0].name === nickname;
+        const finalTable = (data.table || []).map(remapIsUser);
+        const isChampion = finalTable.length > 0 && finalTable[0].name === nickname;
         return {
           ...prev,
           phase: 'brasileirao' as const,
           brasilRounds,
-          leagueTable: data.table || [],
+          leagueTable: finalTable,
           knockoutRounds: [],
           userMatches: uMatches,
           userTeamName: nickname,

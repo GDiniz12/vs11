@@ -12,7 +12,7 @@ import MatchResultCard from "@/components/MatchResultCard";
 export default function BrasileiraoPage() {
   const router = useRouter();
   const { lang } = useLanguage();
-  const { brasilRounds, userTeamName, clearSave, setPhase } = useGame();
+  const { brasilRounds, userTeamName, isChampion, clearSave, setPhase } = useGame();
   const isPt = lang === "pt";
 
   const [displayedRound, setDisplayedRound] = useState(0);
@@ -32,8 +32,9 @@ export default function BrasileiraoPage() {
   const isFinal = showAll || isLastRound;
 
   const finalStandings = brasilRounds[totalRounds - 1].standingsAfterRound;
-  const userPosition = finalStandings.findIndex((t) => t.isUser);
-  const userIsChampion = userPosition === 0;
+  // Match by name, not isUser — in online mode multiple humans have isUser: true
+  const userPosition = finalStandings.findIndex((t) => t.name === userTeamName);
+  const userIsChampion = isChampion;
 
   const handleSimulateAll = () => {
     setShowAll(true);

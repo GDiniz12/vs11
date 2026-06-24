@@ -79,6 +79,28 @@ describe("generateOnlineBrasileirao", () => {
       expect(result.playerMatches[nick]).toHaveLength(38);
     }
   });
+
+  it("isUser is true for ALL humans in standings (host-side flag, must be remapped per-client)", () => {
+    // This test documents the known behaviour: the host marks every non-bot as
+    // isUser:true. setOnlineTournamentState must remap to t.name === nickname
+    // so non-champion humans don't see themselves as champion.
+    const humans = [makeHumanTeam("Alice"), makeHumanTeam("Bob")];
+    const result = generateOnlineBrasileirao(humans, BOT_POOL, "medium");
+    const lastRound = result.brasilRounds[result.brasilRounds.length - 1];
+    const humanEntries = lastRound.standingsAfterRound.filter((t: any) => t.isUser);
+    // Both humans are marked isUser — the page must NOT rely on this flag alone
+    expect(humanEntries.length).toBe(2);
+  });
+
+  it("final table: table[0] is the champion (highest points)", () => {
+    const humans = [makeHumanTeam("Alice"), makeHumanTeam("Bob")];
+    const result = generateOnlineBrasileirao(humans, BOT_POOL, "medium");
+    const winner = result.table[0];
+    // Everyone else must have fewer or equal points
+    for (const t of result.table.slice(1)) {
+      expect(winner.points).toBeGreaterThanOrEqual(t.points);
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
