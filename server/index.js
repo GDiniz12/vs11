@@ -30,7 +30,10 @@ const io = new Server(server, {
   cors: {
     origin: frontendUrl, // <-- PROTEGE A CONEXÃO DO SOCKET
     methods: ["GET", "POST"]
-  }
+  },
+  // Brasileirão online sends 38 rounds × 20-team standings. Raise the limit so
+  // the event is not silently dropped (default is 1 MB).
+  maxHttpBufferSize: 5e6,
 });
 
 const rooms = {};

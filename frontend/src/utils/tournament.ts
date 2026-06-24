@@ -854,7 +854,8 @@ export function generateOnlineBrasileirao(humanTeams: any[], allBots: any[], dif
 
   const standings: Record<string, any> = {};
   allTeams.forEach(t => {
-    standings[t.name] = { name: t.name, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0, isUser: !t.isBot, avgOverall: t.strength, players: t.players };
+    // players omitted — not needed on the client for display and would bloat the socket payload
+    standings[t.name] = { name: t.name, played: 0, won: 0, drawn: 0, lost: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0, isUser: !t.isBot, avgOverall: t.strength };
   });
 
   const playerMatches: Record<string, MatchResult[]> = {};
@@ -869,8 +870,11 @@ export function generateOnlineBrasileirao(humanTeams: any[], allBots: any[], dif
     else { s.lost++; }
   };
 
+  // Strip players from each snapshot to keep the socket payload small.
+  // Each snapshot would otherwise carry 20 teams × 11 players across 38 rounds
+  // (~900 KB total), which silently drops the Socket.IO event at the default 1 MB limit.
   const sortedSnapshot = (): LeagueTeam[] =>
-    Object.values(standings).map((s) => ({ ...s })).sort(
+    Object.values(standings).map(({ players: _p, ...s }) => s as LeagueTeam).sort(
       (a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor
     );
 
