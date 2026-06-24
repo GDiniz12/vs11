@@ -77,13 +77,24 @@ export default function ResultPage() {
         isOnline, difficulty, isHardcore, isChampion,
       }),
     })
-      .then((res) => {
-        if (!res.ok) throw new Error("rating save failed");
-        return res.json();
+      .then(async (res) => {
+        if (!res.ok) {
+          // Server explicitly rejected the request — show error and allow retry
+          setRatingError(true);
+          ratingSubmitted.current = false;
+          return;
+        }
+        // Rating was saved. JSON parse failure must not trigger the error banner
+        // because the points are already committed on the server.
+        const data = await res.json().catch(() => null);
+        if (data?.user) updateRating(data.user.rating);
       })
-      .then((data) => { if (data.user) updateRating(data.user.rating); })
-      .catch(() => { setRatingError(true); ratingSubmitted.current = false; });
-  }, [user, token, isRanked, gameId, stats, isOnline, difficulty]);
+      .catch(() => {
+        // Network-level failure (no response at all) — safe to show error
+        setRatingError(true);
+        ratingSubmitted.current = false;
+      });
+  }, [user, token, isRanked, gameId, stats, isOnline, difficulty, isHardcore, isChampion]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
