@@ -37,15 +37,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        const { token: t, user: u } = JSON.parse(stored);
-        setToken(t);
-        setUser(u);
-      }
-    } catch {}
-    setIsLoading(false);
+    let cancelled = false;
+    const init = async () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          const { token: t, user: u } = JSON.parse(stored);
+          // Render immediately with cached data, then sync rating from server
+          setToken(t);
+          setUser(u);
+          if (!cancelled) setIsLoading(false);
+          // Background refresh: keeps the main-page rating in sync after ranked games
+          const res = await fetch(`${API_URL}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${t}` },
+          });
+          if (res.ok && !cancelled) {
+            const data = await res.json().catch(() => null);
+            if (data?.user) {
+              setUser(data.user);
+              try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({ token: t, user: data.user }));
+              } catch {}
+            }
+          }
+          return;
+        }
+      } catch {}
+      if (!cancelled) setIsLoading(false);
+    };
+    init();
+    return () => { cancelled = true; };
   }, []);
 
   const persist = (token: string, user: User) => {
