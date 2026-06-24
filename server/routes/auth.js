@@ -212,7 +212,7 @@ router.patch('/rating', verifyToken, async (req, res) => {
     );
     res.json({ user: result.rows[0], delta });
   } catch (err) {
-    console.error('Rating update error:', err);
+    console.error('Rating update error [code=%s]: %s', err.code, err.message);
     res.status(500).json({ message: 'Erro interno do servidor.' });
   }
 });

@@ -3,7 +3,10 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const fs = require('fs');
+const path = require('path');
 const authRoutes = require('./routes/auth');
+const pool = require('./db');
 
 // Fail fast if critical secrets are missing — a missing JWT_SECRET would
 // otherwise produce 500s at request time or, worse, forgeable tokens.
@@ -12,6 +15,15 @@ const missingEnv = REQUIRED_ENV.filter((k) => !process.env[k]);
 if (missingEnv.length > 0) {
   console.error(`FATAL: variáveis de ambiente ausentes: ${missingEnv.join(', ')}. Verifique o arquivo .env.`);
   process.exit(1);
+}
+
+// Run db.sql idempotently at startup so new tables (e.g. rating_events) are
+// created automatically without requiring a manual migration step.
+// All statements use CREATE TABLE IF NOT EXISTS, so this is safe to run repeatedly.
+async function runMigrations() {
+  const sql = fs.readFileSync(path.join(__dirname, 'db.sql'), 'utf8');
+  await pool.query(sql);
+  console.log('Migrações do banco aplicadas com sucesso.');
 }
 
 const app = express();
@@ -370,6 +382,13 @@ function getSafeRoom(room) {
 }
 
 const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`Servidor de Sockets rodando na porta ${PORT}`);
-});
+runMigrations()
+  .then(() => {
+    server.listen(PORT, () => {
+      console.log(`Servidor de Sockets rodando na porta ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('FATAL: erro ao aplicar migrações do banco:', err.message);
+    process.exit(1);
+  });
