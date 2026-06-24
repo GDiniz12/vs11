@@ -171,10 +171,13 @@ export default function HomePage() {
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.65, ease: "easeOut" }}
       >
-        {/* Badge */}
-        <div className="self-start max-w-full min-w-0 flex items-center gap-2 border-2 border-white/30 px-3 py-1.5 mb-7 overflow-hidden">
-          <div className="w-2 h-2 bg-amber-400 flex-shrink-0" />
-          <span className="text-white/80 font-bold tracking-wide uppercase text-xs truncate">{t.badge}</span>
+        {/* Badge — block wrapper lets the inner inline-flex shrink to content width
+            regardless of the parent flex-col context */}
+        <div className="mb-7 max-w-full overflow-hidden">
+          <div className="inline-flex items-center gap-2 border-2 border-white/30 px-3 py-1.5 max-w-full overflow-hidden">
+            <div className="w-2 h-2 bg-amber-400 flex-shrink-0" />
+            <span className="text-white/80 font-bold tracking-wide uppercase text-xs whitespace-nowrap">{t.badge}</span>
+          </div>
         </div>
 
         {/* Logo — displayed inside a white card so the PNG background blends cleanly */}
@@ -247,9 +250,9 @@ export default function HomePage() {
         <div className="w-full max-w-[420px]">
 
           {/* Pitch header */}
-          <div className="flex items-center justify-between mb-3 gap-2 min-w-0">
-            <p className="text-white/50 font-black text-[10px] uppercase tracking-widest min-w-0 flex-1 truncate">{t.pitchLabel}</p>
-            <span className="bg-[#0033A0] border-2 border-white/30 text-white text-[9px] font-black uppercase px-2 py-0.5 tracking-wider flex-shrink-0">
+          <div className="flex items-center justify-between mb-3 gap-2 overflow-hidden">
+            <p className="text-white/50 font-black text-[10px] uppercase tracking-normal min-w-0 flex-1 truncate">{t.pitchLabel}</p>
+            <span className="bg-[#0033A0] border-2 border-white/30 text-white text-[9px] font-black uppercase px-2 py-0.5 tracking-wide flex-shrink-0">
               4-3-3
             </span>
           </div>
